@@ -132,43 +132,7 @@ const Dashboard = () => {
       </div>
 
       {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="flex items-center space-x-3 p-4 rounded-lg border border-dashed border-muted-foreground/25 hover:border-primary/50 transition-colors cursor-pointer">
-              <Package className="h-8 w-8 text-primary" />
-              <div>
-                <p className="font-medium">Add Product</p>
-                <p className="text-sm text-muted-foreground">Create new product</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3 p-4 rounded-lg border border-dashed border-muted-foreground/25 hover:border-primary/50 transition-colors cursor-pointer">
-              <Users className="h-8 w-8 text-primary" />
-              <div>
-                <p className="font-medium">Manage Users</p>
-                <p className="text-sm text-muted-foreground">User administration</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3 p-4 rounded-lg border border-dashed border-muted-foreground/25 hover:border-primary/50 transition-colors cursor-pointer">
-              <Activity className="h-8 w-8 text-primary" />
-              <div>
-                <p className="font-medium">View Analytics</p>
-                <p className="text-sm text-muted-foreground">Performance metrics</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3 p-4 rounded-lg border border-dashed border-muted-foreground/25 hover:border-primary/50 transition-colors cursor-pointer">
-              <TrendingUp className="h-8 w-8 text-primary" />
-              <div>
-                <p className="font-medium">Generate Report</p>
-                <p className="text-sm text-muted-foreground">Business insights</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+     
     </div>
   );
 };

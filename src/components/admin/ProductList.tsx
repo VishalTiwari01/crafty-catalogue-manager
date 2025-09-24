@@ -1,3 +1,5 @@
+// src/components/admin/ProductList.tsx
+
 import { useState } from "react";
 import { Product } from "@/types/product";
 import { Button } from "@/components/ui/button";
@@ -41,120 +43,88 @@ export const ProductList = ({ products, onEdit, onDelete }: ProductListProps) =>
       onDelete(product.id);
       toast({
         title: "Product Deleted",
-        description: `${product.name} has been removed from the catalog.`,
+        description: `${product.name} has been removed.`,
       });
     }
   };
 
-  const formatCurrency = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(price);
-  };
-
   return (
     <div className="space-y-6">
-      {/* Search and Stats */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
+      <div className="flex items-center space-x-2">
+        <div className="relative flex-grow">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input 
             placeholder="Search products..."
+            className="pl-9"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
           />
-        </div>
-        <div className="flex gap-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Package className="w-4 h-4" />
-            <span>{filteredProducts.length} products</span>
-          </div>
         </div>
       </div>
 
-      {/* Products Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredProducts.map((product) => (
-          <Card key={product.id} className="group hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="text-2xl">{product.emoji}</div>
-                  <div>
-                    <h3 className="font-semibold text-lg leading-tight">{product.name}</h3>
-                    <Badge variant="secondary" className="mt-1">
-                      {product.category}
-                    </Badge>
-                  </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {filteredProducts.map((product, id) => (
+          // Added the 'key' prop here
+          <Card key={product.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
+            <div className="relative">
+              {product.images?.[0] ? (
+                <img
+                  src={product.images[0]}
+                  alt={product.name}
+                  className="w-full h-48 object-cover"
+                />
+              ) : (
+                <div className="w-full h-48 flex items-center justify-center bg-gray-200 text-gray-400">
+                  No Image
+                </div>
+              )}
+              {product.isFeatured && (
+                <Badge variant="secondary" className="absolute top-2 left-2">Featured</Badge>
+              )}
+            </div>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold truncate">{product.name}</h3>
+                  <p className="text-sm text-muted-foreground">{product.category}</p>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                      <MoreHorizontal className="w-4 h-4" />
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                      <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEdit(product)}>
-                      <Edit2 className="w-4 h-4 mr-2" />
-                      Edit
+                    <DropdownMenuItem onSelect={() => onEdit(product)}>
+                      <Edit2 className="h-4 w-4 mr-2" /> Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => handleDelete(product)}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete
+                    <DropdownMenuItem onSelect={() => handleDelete(product)}>
+                      <Trash2 className="h-4 w-4 mr-2 text-destructive" /> Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-success" />
-                    <span className="font-bold text-lg">{formatCurrency(product.price)}</span>
-                    {product.originalPrice > product.price && (
-                      <span className="text-sm text-muted-foreground line-through">
-                        {formatCurrency(product.originalPrice)}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm font-medium">{product.rating}</span>
-                    <span className="text-sm text-muted-foreground">({product.reviewCount})</span>
-                  </div>
-                </div>
-
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {product.description}
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-xl font-bold text-primary">
+                  ${product.price.toFixed(2)}
                 </p>
-
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Age: {product.ageRange}</span>
-                  <span>{product.features.length} features</span>
-                </div>
-
-                {product.colors.length > 0 && (
-                  <div className="flex gap-1">
-                    {product.colors.slice(0, 4).map((color, index) => (
-                      <div
-                        key={index}
-                        className="w-5 h-5 rounded-full border-2 border-background shadow-sm"
-                        style={{ backgroundColor: color }}
-                        title={product.colorNames[index]}
-                      />
-                    ))}
-                    {product.colors.length > 4 && (
-                      <div className="w-5 h-5 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-medium">
-                        +{product.colors.length - 4}
-                      </div>
-                    )}
-                  </div>
+                {product.salePrice > 0 && (
+                  <p className="text-sm text-muted-foreground line-through ml-2">
+                    ${product.salePrice.toFixed(2)}
+                  </p>
                 )}
+              </div>
+
+              <div className="flex items-center justify-between text-sm mt-2 text-muted-foreground">
+                <div className="flex items-center space-x-1">
+                  <Star className="w-4 h-4" />
+                  <span>{product.rating} ({product.reviewCount})</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Package className="w-4 h-4" />
+                  <span>{product.stockQuantity} in stock</span>
+                </div>
               </div>
             </CardContent>
           </Card>

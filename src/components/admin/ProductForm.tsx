@@ -1,165 +1,215 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { X, Plus, Trash2 } from "lucide-react";
-import { Product } from "@/types/product";
-import { useToast } from "@/hooks/use-toast";
+// src/components/ProductForm.tsx
+
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { X, Plus, Trash2 } from 'lucide-react';
+import { Product, ProductVariant } from '@/types/product';
+import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface ProductFormProps {
   product?: Product;
-  onSave: (product: Omit<Product, 'id'> | Product) => void;
+  onSave: (product: Product, mainFiles: File[], variantFiles: { [key: number]: File[] }) => void;
   onCancel: () => void;
 }
 
 export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState<Omit<Product, 'id'>>({
+  const [formData, setFormData] = useState<Product>({
     name: '',
-    price: 0,
-    originalPrice: 0,
-    rating: 0,
-    reviewCount: 0,
-    category: '',
-    emoji: '',
-    colors: [],
-    colorNames: [],
-    images: [],
     description: '',
-    features: [],
-    specifications: {},
-    ageRange: '',
+    shortDescription: '',
+    categoryId: '',
+    price: 0,
+    salePrice: 0,
+    stockQuantity: 0,
+    weight: 0,
+    size: '',
+    careInstructions: '',
+    warrantyPeriod: 0,
+    isFeatured: false,
+    isActive: true,
+    status: 'active',
+    variants: [],
+    
   });
 
-  const [newFeature, setNewFeature] = useState('');
-  const [newColor, setNewColor] = useState('');
-  const [newColorName, setNewColorName] = useState('');
-  const [newImage, setNewImage] = useState('');
-  const [newSpecKey, setNewSpecKey] = useState('');
-  const [newSpecValue, setNewSpecValue] = useState('');
+  const [mainSelectedFiles, setMainSelectedFiles] = useState<File[]>([]);
+  const [mainImagePreviews, setMainImagePreviews] = useState<string[]>([]);
+
+  const [variantFiles, setVariantFiles] = useState<{ [key: number]: File[] }>({});
+  const [variantPreviews, setVariantPreviews] = useState<{ [key: number]: string[] }>({});
 
   useEffect(() => {
     if (product) {
-      setFormData({
-        name: product.name,
-        price: product.price,
-        originalPrice: product.originalPrice,
-        rating: product.rating,
-        reviewCount: product.reviewCount,
-        category: product.category,
-        emoji: product.emoji,
-        colors: product.colors,
-        colorNames: product.colorNames,
-        images: product.images,
-        description: product.description,
-        features: product.features,
-        specifications: product.specifications,
-        ageRange: product.ageRange,
+      setFormData(product);
+      if (product.images) {
+        setMainImagePreviews(product.images);
+      }
+      const initialVariantPreviews: { [key: number]: string[] } = {};
+      product.variants.forEach((variant, index) => {
+        initialVariantPreviews[index] = variant.images;
       });
+      setVariantPreviews(initialVariantPreviews);
     }
   }, [product]);
 
+  const handleMainFieldChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value, type, checked } = e.target as HTMLInputElement;
+    setFormData((prev) => ({
+      ...prev,
+      [id]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleNumberFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [id]: parseFloat(value) || 0,
+    }));
+  };
+
+  const handleVariantChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    const newVariants = [...formData.variants];
+    newVariants[index] = {
+      ...newVariants[index],
+      [name]: type === 'checkbox' ? checked : value,
+    };
+    setFormData((prev) => ({ ...prev, variants: newVariants }));
+  };
+
+  const handleVariantNumberChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const newVariants = [...formData.variants];
+    newVariants[index] = {
+      ...newVariants[index],
+      [name]: parseFloat(value) || 0,
+    };
+    setFormData((prev) => ({ ...prev, variants: newVariants }));
+  };
+
+  const addVariant = () => {
+    setFormData((prev) => ({
+      ...prev,
+      variants: [
+        ...prev.variants,
+        {
+          variantType: 'Color',
+          variantValue: '',
+          priceAdjustment: 0,
+          stockQuantity: 0,
+          images: [],
+          isActive: true,
+        },
+      ],
+    }));
+  };
+
+  const removeVariant = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      variants: prev.variants.filter((_, i) => i !== index),
+    }));
+    setVariantFiles((prev) => {
+      const newFiles = { ...prev };
+      delete newFiles[index];
+      return newFiles;
+    });
+    setVariantPreviews((prev) => {
+      const newPreviews = { ...prev };
+      if (newPreviews[index]) {
+        newPreviews[index].forEach(URL.revokeObjectURL);
+        delete newPreviews[index];
+      }
+      return newPreviews;
+    });
+  };
+
+  const handleMainImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const newFiles = Array.from(files);
+      setMainSelectedFiles((prev) => [...prev, ...newFiles]);
+
+      const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
+      setMainImagePreviews((prev) => [...prev, ...newPreviews]);
+    }
+  };
+
+  const removeMainImage = (index: number) => {
+    URL.revokeObjectURL(mainImagePreviews[index]);
+    setMainImagePreviews((prev) => prev.filter((_, i) => i !== index));
+    setMainSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+  
+  const handleVariantImageChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const newFiles = Array.from(files);
+      setVariantFiles((prev) => ({
+        ...prev,
+        [index]: [...(prev[index] || []), ...newFiles],
+      }));
+
+      const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
+      setVariantPreviews((prev) => ({
+        ...prev,
+        [index]: [...(prev[index] || []), ...newPreviews],
+      }));
+    }
+  };
+
+  const removeVariantImage = (variantIndex: number, imageIndex: number) => {
+    const previews = variantPreviews[variantIndex];
+    if (previews && previews[imageIndex]) {
+      URL.revokeObjectURL(previews[imageIndex]);
+    }
+
+    setVariantPreviews((prev) => {
+      const newPreviews = { ...prev };
+      if (newPreviews[variantIndex]) {
+        newPreviews[variantIndex] = newPreviews[variantIndex].filter((_, i) => i !== imageIndex);
+      }
+      return newPreviews;
+    });
+
+    setVariantFiles((prev) => {
+      const newFiles = { ...prev };
+      if (newFiles[variantIndex]) {
+        newFiles[variantIndex] = newFiles[variantIndex].filter((_, i) => i !== imageIndex);
+      }
+      return newFiles;
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.name || !formData.category || formData.price <= 0) {
+
+    if (!formData.name || !formData.categoryId || formData.price <= 0) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields with valid values.",
-        variant: "destructive",
+        title: 'Validation Error',
+        description: 'Please fill in all required fields.',
+        variant: 'destructive',
       });
       return;
     }
 
-    if (product) {
-      onSave({ ...formData, id: product.id });
-    } else {
-      onSave(formData);
-    }
-    
-    toast({
-      title: "Success",
-      description: `Product ${product ? 'updated' : 'created'} successfully!`,
-    });
-  };
-
-  const addFeature = () => {
-    if (newFeature.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        features: [...prev.features, newFeature.trim()]
-      }));
-      setNewFeature('');
-    }
-  };
-
-  const removeFeature = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      features: prev.features.filter((_, i) => i !== index)
-    }));
-  };
-
-  const addColor = () => {
-    if (newColor.trim() && newColorName.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        colors: [...prev.colors, newColor.trim()],
-        colorNames: [...prev.colorNames, newColorName.trim()]
-      }));
-      setNewColor('');
-      setNewColorName('');
-    }
-  };
-
-  const removeColor = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      colors: prev.colors.filter((_, i) => i !== index),
-      colorNames: prev.colorNames.filter((_, i) => i !== index)
-    }));
-  };
-
-  const addImage = () => {
-    if (newImage.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        images: [...prev.images, newImage.trim()]
-      }));
-      setNewImage('');
-    }
-  };
-
-  const removeImage = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index)
-    }));
-  };
-
-  const addSpecification = () => {
-    if (newSpecKey.trim() && newSpecValue.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        specifications: {
-          ...prev.specifications,
-          [newSpecKey.trim()]: newSpecValue.trim()
-        }
-      }));
-      setNewSpecKey('');
-      setNewSpecValue('');
-    }
-  };
-
-  const removeSpecification = (key: string) => {
-    setFormData(prev => {
-      const newSpecs = { ...prev.specifications };
-      delete newSpecs[key];
-      return { ...prev, specifications: newSpecs };
-    });
+    // Call onSave with all form data, including files
+    onSave(formData, mainSelectedFiles, variantFiles);
   };
 
   return (
@@ -167,9 +217,7 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
       <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-2xl">
-              {product ? 'Edit Product' : 'Add New Product'}
-            </CardTitle>
+            <CardTitle className="text-2xl">{product ? 'Edit Product' : 'Add New Product'}</CardTitle>
             <Button variant="outline" size="icon" onClick={onCancel}>
               <X className="w-4 h-4" />
             </Button>
@@ -177,248 +225,237 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
+            {/* General Information Section */}
+            <div className="space-y-4 border-b pb-4">
+              <h2 className="text-lg font-semibold">General Information</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="name">Product Name *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    required
-                  />
+                  <Input id="name" value={formData.name} onChange={handleMainFieldChange} required />
                 </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="price">Price *</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      step="0.01"
-                      value={formData.price}
-                      onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="originalPrice">Original Price</Label>
-                    <Input
-                      id="originalPrice"
-                      type="number"
-                      step="0.01"
-                      value={formData.originalPrice}
-                      onChange={(e) => setFormData(prev => ({ ...prev, originalPrice: parseFloat(e.target.value) || 0 }))}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="rating">Rating</Label>
-                    <Input
-                      id="rating"
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      max="5"
-                      value={formData.rating}
-                      onChange={(e) => setFormData(prev => ({ ...prev, rating: parseFloat(e.target.value) || 0 }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="reviewCount">Review Count</Label>
-                    <Input
-                      id="reviewCount"
-                      type="number"
-                      value={formData.reviewCount}
-                      onChange={(e) => setFormData(prev => ({ ...prev, reviewCount: parseInt(e.target.value) || 0 }))}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="category">Category *</Label>
-                    <Input
-                      id="category"
-                      value={formData.category}
-                      onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="emoji">Emoji</Label>
-                    <Input
-                      id="emoji"
-                      value={formData.emoji}
-                      onChange={(e) => setFormData(prev => ({ ...prev, emoji: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
                 <div>
-                  <Label htmlFor="ageRange">Age Range</Label>
-                  <Input
-                    id="ageRange"
-                    value={formData.ageRange}
-                    onChange={(e) => setFormData(prev => ({ ...prev, ageRange: e.target.value }))}
-                  />
+                  <Label htmlFor="categoryId">Category ID *</Label>
+                  <Input id="categoryId" value={formData.categoryId} onChange={handleMainFieldChange} required />
                 </div>
               </div>
-
-              <div className="space-y-4">
+              <div>
+                <Label htmlFor="shortDescription">Short Description</Label>
+                <Textarea id="shortDescription" rows={2} value={formData.shortDescription} onChange={handleMainFieldChange} />
+              </div>
+              <div>
+                <Label htmlFor="description">Full Description</Label>
+                <Textarea id="description" rows={4} value={formData.description} onChange={handleMainFieldChange} />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    rows={4}
-                    value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  />
+                  <Label htmlFor="price">Price *</Label>
+                  <Input id="price" type="number" step="0.01" value={formData.price} onChange={handleNumberFieldChange} required />
                 </div>
-
-                {/* Features */}
                 <div>
-                  <Label>Features</Label>
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Add feature"
-                        value={newFeature}
-                        onChange={(e) => setNewFeature(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addFeature())}
-                      />
-                      <Button type="button" onClick={addFeature} size="icon">
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {formData.features.map((feature, index) => (
-                        <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                          {feature}
-                          <button
-                            type="button"
-                            onClick={() => removeFeature(index)}
-                            className="ml-1 hover:text-destructive"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
+                  <Label htmlFor="salePrice">Sale Price</Label>
+                  <Input id="salePrice" type="number" step="0.01" value={formData.salePrice} onChange={handleNumberFieldChange} />
                 </div>
-
-                {/* Colors */}
                 <div>
-                  <Label>Colors</Label>
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Color hex (e.g., #FF0000)"
-                        value={newColor}
-                        onChange={(e) => setNewColor(e.target.value)}
-                      />
-                      <Input
-                        placeholder="Color name"
-                        value={newColorName}
-                        onChange={(e) => setNewColorName(e.target.value)}
-                      />
-                      <Button type="button" onClick={addColor} size="icon">
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {formData.colors.map((color, index) => (
-                        <Badge key={index} variant="secondary" className="flex items-center gap-2">
-                          <div
-                            className="w-3 h-3 rounded-full border"
-                            style={{ backgroundColor: color }}
-                          />
-                          {formData.colorNames[index]}
-                          <button
-                            type="button"
-                            onClick={() => removeColor(index)}
-                            className="ml-1 hover:text-destructive"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
+                  <Label htmlFor="stockQuantity">Stock Quantity</Label>
+                  <Input id="stockQuantity" type="number" value={formData.stockQuantity} onChange={handleNumberFieldChange} />
                 </div>
-
-                {/* Images */}
                 <div>
-                  <Label>Images (emojis or URLs)</Label>
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Add image"
-                        value={newImage}
-                        onChange={(e) => setNewImage(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addImage())}
-                      />
-                      <Button type="button" onClick={addImage} size="icon">
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {formData.images.map((image, index) => (
-                        <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                          {image}
-                          <button
-                            type="button"
-                            onClick={() => removeImage(index)}
-                            className="ml-1 hover:text-destructive"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
+                  <Label htmlFor="weight">Weight (kg)</Label>
+                  <Input id="weight" type="number" step="0.01" value={formData.weight} onChange={handleNumberFieldChange} />
+                </div>
+                <div>
+                  <Label htmlFor="size">Size</Label>
+                  <Input id="size" value={formData.size} onChange={handleMainFieldChange} />
+                </div>
+                <div>
+                  <Label htmlFor="warrantyPeriod">Warranty Period (months)</Label>
+                  <Input id="warrantyPeriod" type="number" value={formData.warrantyPeriod} onChange={handleNumberFieldChange} />
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="isFeatured" checked={formData.isFeatured} onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isFeatured: Boolean(checked) }))} />
+                  <Label htmlFor="isFeatured">Featured</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="isActive" checked={formData.isActive} onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isActive: Boolean(checked) }))} />
+                  <Label htmlFor="isActive">Active</Label>
+                </div>
+                <div>
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value: 'active' | 'draft' | 'archived') =>
+                      setFormData((prev) => ({ ...prev, status: value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
 
-            {/* Specifications */}
-            <div>
-              <Label>Specifications</Label>
-              <div className="space-y-2">
-                <div className="flex gap-2">
+            {/* Main Images Upload Section */}
+            <div className="space-y-4 border-b pb-4">
+              <h2 className="text-lg font-semibold">Product Images</h2>
+              <div>
+                <Label htmlFor="main-image-upload">Upload Images</Label>
+                <div className="space-y-2">
                   <Input
-                    placeholder="Specification key"
-                    value={newSpecKey}
-                    onChange={(e) => setNewSpecKey(e.target.value)}
+                    id="main-image-upload"
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleMainImageChange}
                   />
-                  <Input
-                    placeholder="Specification value"
-                    value={newSpecValue}
-                    onChange={(e) => setNewSpecValue(e.target.value)}
-                  />
-                  <Button type="button" onClick={addSpecification} size="icon">
-                    <Plus className="w-4 h-4" />
-                  </Button>
+                  {/* <div className="flex flex-wrap gap-2">
+                    {mainImagePreviews.map((image, index) => (
+                      <Badge key={index} variant="secondary" className="flex items-center gap-1 p-1">
+                        <img
+                          src={image}
+                          alt={`Product preview ${index + 1}`}
+                          className="h-12 w-12 object-cover rounded-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeMainImage(index)}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div> */}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {Object.entries(formData.specifications).map(([key, value]) => (
-                    <div key={key} className="flex items-center justify-between p-2 bg-muted rounded">
-                      <span className="text-sm">
-                        <strong>{key}:</strong> {value}
-                      </span>
-                      <button
+              </div>
+            </div>
+
+            {/* Product Variants Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Product Variants</h2>
+                <Button type="button" onClick={addVariant} size="sm">
+                  <Plus className="w-4 h-4 mr-2" /> Add Variant
+                </Button>
+              </div>
+
+              {formData.variants.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No variants added yet.
+                </p>
+              )}
+
+              <div className="space-y-4">
+                {formData.variants.map((variant, index) => (
+                  <Card key={index} className="p-4 bg-muted">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-md font-medium">Variant {index + 1}</h3>
+                      <Button
                         type="button"
-                        onClick={() => removeSpecification(key)}
-                        className="text-destructive hover:text-destructive/80"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeVariant(index)}
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
                     </div>
-                  ))}
-                </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor={`variantType-${index}`}>Type</Label>
+                        <Input
+                          id={`variantType-${index}`}
+                          name="variantType"
+                          value={variant.variantType}
+                          onChange={(e) => handleVariantChange(index, e)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`variantValue-${index}`}>Value</Label>
+                        <Input
+                          id={`variantValue-${index}`}
+                          name="variantValue"
+                          value={variant.variantValue}
+                          onChange={(e) => handleVariantChange(index, e)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                      <div>
+                        <Label htmlFor={`stockQuantity-${index}`}>Stock Quantity</Label>
+                        <Input
+                          id={`stockQuantity-${index}`}
+                          name="stockQuantity"
+                          type="number"
+                          value={variant.stockQuantity}
+                          onChange={(e) => handleVariantNumberChange(index, e)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`priceAdjustment-${index}`}>Price Adjustment</Label>
+                        <Input
+                          id={`priceAdjustment-${index}`}
+                          name="priceAdjustment"
+                          type="number"
+                          step="0.01"
+                          value={variant.priceAdjustment}
+                          onChange={(e) => handleVariantNumberChange(index, e)}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Variant Images Section */}
+                    <div className="mt-4 space-y-2">
+                      <Label htmlFor={`variant-image-upload-${index}`}>Upload Variant Images</Label>
+                      <Input
+                        id={`variant-image-upload-${index}`}
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => handleVariantImageChange(index, e)}
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        {variantPreviews[index]?.map((image, imageIndex) => (
+                          <Badge key={imageIndex} variant="secondary" className="flex items-center gap-1 p-1">
+                            <img
+                              src={image}
+                              alt={`Variant preview ${imageIndex + 1}`}
+                              className="h-12 w-12 object-cover rounded-sm"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeVariantImage(index, imageIndex)}
+                              className="ml-1 hover:text-destructive"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2 mt-4">
+                      <Checkbox
+                        id={`isActive-${index}`}
+                        name="isActive"
+                        checked={variant.isActive}
+                        onCheckedChange={(checked) => {
+                          const newVariants = [...formData.variants];
+                          newVariants[index].isActive = Boolean(checked);
+                          setFormData((prev) => ({ ...prev, variants: newVariants }));
+                        }}
+                      />
+                      <Label htmlFor={`isActive-${index}`}>Active</Label>
+                    </div>
+                  </Card>
+                ))}
               </div>
             </div>
 

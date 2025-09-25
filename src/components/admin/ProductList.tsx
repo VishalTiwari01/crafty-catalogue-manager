@@ -33,13 +33,14 @@ export const ProductList = ({ products, onEdit, onDelete }: ProductListProps) =>
 
   const handleDelete = (product: Product) => {
     if (window.confirm(`Are you sure you want to delete "${product.name}"?`)) {
-      onDelete(product.id);
+      onDelete(product._id);
       toast({
         title: "Product Deleted",
         description: `${product.name} has been removed.`,
       });
     }
   };
+
 
   return (
     <div className="space-y-6">

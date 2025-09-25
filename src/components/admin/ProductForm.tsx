@@ -123,7 +123,7 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
       }
       // Set variant image previews
       const initialVariantPreviews: { [key: number]: string } = {};
-      product.variants.forEach((variant, index) => {
+      product?.variants?.forEach((variant, index) => {
         if (variant.imageUrl && variant.imageUrl.imageUrl) {
           initialVariantPreviews[index] = variant.imageUrl.imageUrl;
         }
@@ -353,7 +353,7 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
     setFormData((prev) => ({
       ...prev,
       variants: [
-        ...prev.variants,
+        ...prev?.variants,
         {
           variantType: 'Color',
           variantValue: '',
@@ -653,14 +653,14 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
                 </Button>
               </div>
 
-              {formData.variants.length === 0 && (
+              {formData?.variants?.length === 0 && (
                 <p className="text-sm text-muted-foreground">
                   No variants added yet. Add variants for different colors, sizes, or other variations.
                 </p>
               )}
 
               <div className="space-y-4">
-                {formData.variants.map((variant, index) => (
+                {formData?.variants?.map((variant, index) => (
                   <Card key={index} className="p-4 bg-muted">
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="text-md font-medium">Variant {index + 1}</h3>

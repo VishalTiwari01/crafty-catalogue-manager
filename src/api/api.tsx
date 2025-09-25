@@ -116,7 +116,7 @@ export const updateProduct = async (
   }
 };
 
-export const deleteProduct = async (id: number): Promise<void> => {
+export const deleteProduct = async (id: string): Promise<void> => {
   try {
     const response = await fetch(`${API_BASE_URL}/products/${id}`, {
       method: 'DELETE',
@@ -145,15 +145,17 @@ export const fetchProducts = async (): Promise<Product[]> => {
 };
 
 
-export const getAllOrders = async (): Promise<Order[]> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/orders`);
-    if (!response.ok) {
-      throw new Error("Failed to fetch orders");
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching orders:", error);
-    return [];
-  }
+
+export const getOrderById = async (orderId?: string | null) => {
+  if (!orderId) throw new Error("Order ID is required");
+
+  const token = localStorage.getItem("token");
+
+  const response = await axios.get(`${API_BASE_URL}/orders/${orderId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
 };

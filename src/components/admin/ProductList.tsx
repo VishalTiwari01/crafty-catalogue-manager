@@ -1,27 +1,19 @@
-// src/components/admin/ProductList.tsx
-
 import { useState } from "react";
 import { Product } from "@/types/product";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { 
-  MoreHorizontal, 
-  Edit2, 
-  Trash2, 
-  Search, 
+import {
+  Search,
   Star,
   DollarSign,
-  Package
+  Package,
+  Edit2,
+  Trash2,
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import React from "react";
 
 interface ProductListProps {
   products: Product[];
@@ -33,9 +25,10 @@ export const ProductList = ({ products, onEdit, onDelete }: ProductListProps) =>
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredProducts = products.filter(
+    (product) =>
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleDelete = (product: Product) => {
@@ -50,10 +43,11 @@ export const ProductList = ({ products, onEdit, onDelete }: ProductListProps) =>
 
   return (
     <div className="space-y-6">
+      {/* Search bar */}
       <div className="flex items-center space-x-2">
         <div className="relative flex-grow">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input 
+          <Input
             placeholder="Search products..."
             className="pl-9"
             value={searchTerm}
@@ -62,10 +56,14 @@ export const ProductList = ({ products, onEdit, onDelete }: ProductListProps) =>
         </div>
       </div>
 
+      {/* Product Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredProducts.map((product, id) => (
-          // Added the 'key' prop here
-          <Card key={product.id} className="overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
+        {filteredProducts.map((product) => (
+          <Card
+            key={product.id ?? `${product.name}-${product.price}`} // ✅ Unique key fallback
+            className="overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 relative"
+          >
+            {/* Product Image */}
             <div className="relative">
               {product.images?.[0] ? (
                 <img
@@ -79,47 +77,58 @@ export const ProductList = ({ products, onEdit, onDelete }: ProductListProps) =>
                 </div>
               )}
               {product.isFeatured && (
-                <Badge variant="secondary" className="absolute top-2 left-2">Featured</Badge>
+                <Badge variant="secondary" className="absolute top-2 left-2">
+                  Featured
+                </Badge>
               )}
+
+              {/* Edit & Delete Icons */}
+              <div className="absolute top-2 right-2 flex space-x-2 bg-white/80 p-1 rounded-md shadow-sm">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="text-blue-600 hover:bg-blue-100"
+                  onClick={() => onEdit(product)}
+                >
+                  <Edit2 className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="text-red-600 hover:bg-red-100"
+                  onClick={() => handleDelete(product)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
+
+            {/* Product Details */}
             <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold truncate">{product.name}</h3>
-                  <p className="text-sm text-muted-foreground">{product.category}</p>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onSelect={() => onEdit(product)}>
-                      <Edit2 className="h-4 w-4 mr-2" /> Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handleDelete(product)}>
-                      <Trash2 className="h-4 w-4 mr-2 text-destructive" /> Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              <div className="mb-1">
+                <h3 className="text-lg font-semibold truncate">{product.name}</h3>
+                <p className="text-sm text-muted-foreground">{product.category}</p>
               </div>
 
+              {/* Price */}
               <div className="flex items-center justify-between mt-2">
                 <p className="text-xl font-bold text-primary">
-                  ${product.price.toFixed(2)}
+                  ₹{product.price.toFixed(2)}
                 </p>
                 {product.salePrice > 0 && (
                   <p className="text-sm text-muted-foreground line-through ml-2">
-                    ${product.salePrice.toFixed(2)}
+                    ₹{product.salePrice.toFixed(2)}
                   </p>
                 )}
               </div>
 
+              {/* Ratings & Stock */}
               <div className="flex items-center justify-between text-sm mt-2 text-muted-foreground">
                 <div className="flex items-center space-x-1">
                   <Star className="w-4 h-4" />
-                  <span>{product.rating} ({product.reviewCount})</span>
+                  <span>
+                    {product.rating} ({product.reviewCount})
+                  </span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <Package className="w-4 h-4" />
@@ -131,12 +140,15 @@ export const ProductList = ({ products, onEdit, onDelete }: ProductListProps) =>
         ))}
       </div>
 
+      {/* No Results */}
       {filteredProducts.length === 0 && (
         <div className="text-center py-12">
           <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No products found</h3>
           <p className="text-muted-foreground">
-            {searchTerm ? 'Try adjusting your search terms.' : 'Get started by adding your first product.'}
+            {searchTerm
+              ? "Try adjusting your search terms."
+              : "Get started by adding your first product."}
           </p>
         </div>
       )}

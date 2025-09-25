@@ -7,8 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus, Trash2 } from 'lucide-react';
-import { Product, ProductVariant } from '@/types/product';
+import { X, Plus, Trash2, Upload, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -19,59 +18,152 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+interface ProductVariant {
+  variantType: string;
+  variantValue: string;
+  priceAdjustment: number;
+  stockQuantity: number;
+  imageUrl: {
+    public_id: string;
+    imageUrl: string;
+  };
+  isActive: boolean;
+}
+
+interface ProductFormData {
+  name: string;
+  slug?: string;
+  description: string;
+  shortDescription: string;
+  sku?: string;
+  categoryId: string;
+  price: number;
+  salePrice?: number;
+  costPrice?: number;
+  stockQuantity: number;
+  lowStockThreshold?: number;
+  weight: number;
+  dimensions?: string;
+  material?: string;
+  color?: string;
+  size: string;
+  careInstructions?: string;
+  warrantyPeriod: number;
+  isFeatured: boolean;
+  isActive: boolean;
+  imageUrl: {
+    public_id: string;
+    imageUrl: string;
+  };
+  status: 'draft' | 'active' | 'inactive' | 'out_of_stock';
+  metaTitle?: string;
+  metaDescription?: string;
+  variants: ProductVariant[];
+}
+
 interface ProductFormProps {
-  product?: Product;
-  onSave: (product: Product, mainFiles: File[], variantFiles: { [key: number]: File[] }) => void;
+  product?: ProductFormData;
+  onSave?: (product: ProductFormData) => void;
   onCancel: () => void;
 }
 
 export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState<Product>({
+  
+  // Main form state
+  const [formData, setFormData] = useState<ProductFormData>({
     name: '',
+    slug: '',
     description: '',
     shortDescription: '',
+    sku: '',
     categoryId: '',
     price: 0,
     salePrice: 0,
+    costPrice: 0,
     stockQuantity: 0,
+    lowStockThreshold: 0,
     weight: 0,
+    dimensions: '',
+    material: '',
+    color: '',
     size: '',
     careInstructions: '',
     warrantyPeriod: 0,
     isFeatured: false,
     isActive: true,
+    imageUrl: {
+      public_id: '',
+      imageUrl: ''
+    },
     status: 'active',
+    metaTitle: '',
+    metaDescription: '',
     variants: [],
-    
   });
 
-  const [mainSelectedFiles, setMainSelectedFiles] = useState<File[]>([]);
-  const [mainImagePreviews, setMainImagePreviews] = useState<string[]>([]);
+  // Loading states
+  const [isUploading, setIsUploading] = useState(false);
+  const [isCreatingProduct, setIsCreatingProduct] = useState(false);
+  const [uploadingVariantIndex, setUploadingVariantIndex] = useState<number | null>(null);
 
-  const [variantFiles, setVariantFiles] = useState<{ [key: number]: File[] }>({});
-  const [variantPreviews, setVariantPreviews] = useState<{ [key: number]: string[] }>({});
+  // Image preview states
+  const [mainImagePreview, setMainImagePreview] = useState<string>('');
+  const [variantPreviews, setVariantPreviews] = useState<{ [key: number]: string }>({});
+
+  // API base URL - adjust according to your setup
+  const API_BASE_URL = 'http://localhost:1209/api';
 
   useEffect(() => {
     if (product) {
       setFormData(product);
-      if (product.images) {
-        setMainImagePreviews(product.images);
+      // Set existing image preview
+      if (product.imageUrl && product.imageUrl.imageUrl) {
+        setMainImagePreview(product.imageUrl.imageUrl);
       }
-      const initialVariantPreviews: { [key: number]: string[] } = {};
+      // Set variant image previews
+      const initialVariantPreviews: { [key: number]: string } = {};
       product.variants.forEach((variant, index) => {
-        initialVariantPreviews[index] = variant.images;
+        if (variant.imageUrl && variant.imageUrl.imageUrl) {
+          initialVariantPreviews[index] = variant.imageUrl.imageUrl;
+        }
       });
       setVariantPreviews(initialVariantPreviews);
     }
   }, [product]);
 
+  // Generate slug from name
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
+
+  // Handle main field changes
   const handleMainFieldChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value, type, checked } = e.target as HTMLInputElement;
-    setFormData((prev) => ({
-      ...prev,
-      [id]: type === 'checkbox' ? checked : value,
-    }));
+    const { id, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [id]: type === 'checkbox' ? checked : value,
+      };
+      
+      // Auto-generate slug when name changes
+      if (id === 'name' && value) {
+        updated.slug = generateSlug(value);
+        // Auto-generate SKU if empty
+        if (!prev.sku) {
+          updated.sku = generateSlug(value).toUpperCase().replace(/-/g, '-') + '-001';
+        }
+      }
+      
+      return updated;
+    });
   };
 
   const handleNumberFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,6 +174,161 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
     }));
   };
 
+  // Upload multiple images to your API - COMMENTED OUT FOR TESTING
+  // const uploadImages = async (files: File[]): Promise<Array<{ url: string; public_id: string }>> => {
+  //  asdsf const formData = new FormData();
+  //   files.forEach((file) => {
+  //     formData.append('image', file);
+  //   });
+
+  //   const response = await fetch(`${API_BASE_URL}/uploads/images`, {
+  //     method: 'POST',
+  //     body: formData,
+  //   });
+
+  //   if (!response.ok) {
+  //     throw new Error(`Upload failed: ${response.statusText}`);
+  //   }
+
+  //   const result = await response.json();
+  //   return result.images; // Assuming API returns { images: [{ url, public_id }] }
+  // };
+
+  // Demo function for testing - returns mock image data
+  const uploadImages = async (files: File[]): Promise<Array<{ url: string; public_id: string }>> => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Return demo image data for each file
+    return files.map((file, index) => ({
+      url: `https://picsum.photos/400/400?random=${Date.now()}-${index}`,
+      public_id: `demo_image_${Date.now()}_${index}`
+    }));
+  };
+
+  // Handle main image upload
+  const handleMainImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      const fileArray = Array.from(files);
+      const uploadedImages = await uploadImages(fileArray);
+
+      // Use only the first uploaded image (single image per interface)
+      const firstImage = uploadedImages[0];
+      const imageObject = {
+        imageUrl: firstImage.url,
+        public_id: firstImage.public_id,
+      };
+
+      setFormData(prev => ({
+        ...prev,
+        imageUrl: imageObject
+      }));
+
+      // Set preview
+      setMainImagePreview(firstImage.url);
+
+      toast({
+        title: 'Success',
+        description: 'Image uploaded successfully.',
+      });
+    } catch (error) {
+      console.error('Image upload error:', error);
+      toast({
+        title: 'Upload Error',
+        description: 'Failed to upload image. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Remove main image
+  const removeMainImage = () => {
+    setFormData(prev => ({
+      ...prev,
+      imageUrl: {
+        public_id: '',
+        imageUrl: ''
+      }
+    }));
+    setMainImagePreview('');
+  };
+
+  // Handle variant image upload
+  const handleVariantImageChange = async (variantIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingVariantIndex(variantIndex);
+    try {
+      const fileArray = Array.from(files);
+      const uploadedImages = await uploadImages(fileArray);
+
+      // Use only the first uploaded image (single image per interface)
+      const firstImage = uploadedImages[0];
+      const imageObject = {
+        public_id: firstImage.public_id,
+        imageUrl: firstImage.url,
+      };
+
+      // Update variant image
+      setFormData(prev => {
+        const newVariants = [...prev.variants];
+        newVariants[variantIndex] = {
+          ...newVariants[variantIndex],
+          imageUrl: imageObject
+        };
+        return { ...prev, variants: newVariants };
+      });
+
+      // Update preview
+      setVariantPreviews(prev => ({
+        ...prev,
+        [variantIndex]: firstImage.url
+      }));
+
+      toast({
+        title: 'Success',
+        description: 'Variant image uploaded successfully.',
+      });
+    } catch (error) {
+      console.error('Variant image upload error:', error);
+      toast({
+        title: 'Upload Error',
+        description: 'Failed to upload variant image. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingVariantIndex(null);
+    }
+  };
+
+  // Remove variant image
+  const removeVariantImage = (variantIndex: number) => {
+    setFormData(prev => {
+      const newVariants = [...prev.variants];
+      newVariants[variantIndex] = {
+        ...newVariants[variantIndex],
+        imageUrl: {
+          public_id: '',
+          imageUrl: ''
+        }
+      };
+      return { ...prev, variants: newVariants };
+    });
+
+    setVariantPreviews(prev => ({
+      ...prev,
+      [variantIndex]: ''
+    }));
+  };
+
+  // Variant management functions
   const handleVariantChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     const newVariants = [...formData.variants];
@@ -112,7 +359,10 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
           variantValue: '',
           priceAdjustment: 0,
           stockQuantity: 0,
-          images: [],
+          imageUrl: {
+            public_id: '',
+            imageUrl: ''
+          },
           isActive: true,
         },
       ],
@@ -124,92 +374,83 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
       ...prev,
       variants: prev.variants.filter((_, i) => i !== index),
     }));
-    setVariantFiles((prev) => {
-      const newFiles = { ...prev };
-      delete newFiles[index];
-      return newFiles;
-    });
     setVariantPreviews((prev) => {
       const newPreviews = { ...prev };
-      if (newPreviews[index]) {
-        newPreviews[index].forEach(URL.revokeObjectURL);
-        delete newPreviews[index];
-      }
+      delete newPreviews[index];
       return newPreviews;
     });
   };
 
-  const handleMainImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      const newFiles = Array.from(files);
-      setMainSelectedFiles((prev) => [...prev, ...newFiles]);
-
-      const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
-      setMainImagePreviews((prev) => [...prev, ...newPreviews]);
-    }
-  };
-
-  const removeMainImage = (index: number) => {
-    URL.revokeObjectURL(mainImagePreviews[index]);
-    setMainImagePreviews((prev) => prev.filter((_, i) => i !== index));
-    setMainSelectedFiles((prev) => prev.filter((_, i) => i !== index));
-  };
-  
-  const handleVariantImageChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      const newFiles = Array.from(files);
-      setVariantFiles((prev) => ({
-        ...prev,
-        [index]: [...(prev[index] || []), ...newFiles],
-      }));
-
-      const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
-      setVariantPreviews((prev) => ({
-        ...prev,
-        [index]: [...(prev[index] || []), ...newPreviews],
-      }));
-    }
-  };
-
-  const removeVariantImage = (variantIndex: number, imageIndex: number) => {
-    const previews = variantPreviews[variantIndex];
-    if (previews && previews[imageIndex]) {
-      URL.revokeObjectURL(previews[imageIndex]);
-    }
-
-    setVariantPreviews((prev) => {
-      const newPreviews = { ...prev };
-      if (newPreviews[variantIndex]) {
-        newPreviews[variantIndex] = newPreviews[variantIndex].filter((_, i) => i !== imageIndex);
-      }
-      return newPreviews;
+  // Create product via API
+  const createProduct = async (productData: ProductFormData) => {
+    const response = await fetch(`${API_BASE_URL}/products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`, // Adjust based on your auth implementation
+      },
+      body: JSON.stringify(productData),
     });
 
-    setVariantFiles((prev) => {
-      const newFiles = { ...prev };
-      if (newFiles[variantIndex]) {
-        newFiles[variantIndex] = newFiles[variantIndex].filter((_, i) => i !== imageIndex);
-      }
-      return newFiles;
-    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `Failed to create product: ${response.statusText}`);
+    }
+
+    return response.json();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validation
     if (!formData.name || !formData.categoryId || formData.price <= 0) {
       toast({
         title: 'Validation Error',
-        description: 'Please fill in all required fields.',
+        description: 'Please fill in all required fields (Name, Category, Price).',
         variant: 'destructive',
       });
       return;
     }
 
-    // Call onSave with all form data, including files
-    onSave(formData, mainSelectedFiles, variantFiles);
+    if (!formData.imageUrl.imageUrl) {
+      toast({
+        title: 'Validation Error',
+        description: 'Product image is required.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsCreatingProduct(true);
+    try {
+      console.log("formData",formData)
+      // Create the product
+      const createdProduct = await createProduct(formData);
+      
+      toast({
+        title: 'Success',
+        description: `Product "${formData.name}" created successfully.`,
+      });
+
+      // Call onSave if provided
+      if (onSave) {
+        onSave(createdProduct);
+      }
+      
+      // Close the form
+      onCancel();
+    } catch (error) {
+      console.error('Product creation error:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create product.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCreatingProduct(false);
+    }
   };
 
   return (
@@ -234,8 +475,20 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
                   <Input id="name" value={formData.name} onChange={handleMainFieldChange} required />
                 </div>
                 <div>
+                  <Label htmlFor="slug">Slug (auto-generated)</Label>
+                  <Input id="slug" value={formData.slug} onChange={handleMainFieldChange} />
+                </div>
+                <div>
+                  <Label htmlFor="sku">SKU (auto-generated)</Label>
+                  <Input id="sku" value={formData.sku} onChange={handleMainFieldChange} />
+                </div>
+                <div>
                   <Label htmlFor="categoryId">Category ID *</Label>
                   <Input id="categoryId" value={formData.categoryId} onChange={handleMainFieldChange} required />
+                </div>
+                <div>
+                  <Label htmlFor="brandId">Brand ID</Label>
+                  <Input id="brandId" value={formData.brandId} onChange={handleMainFieldChange} />
                 </div>
               </div>
               <div>
@@ -256,12 +509,32 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
                   <Input id="salePrice" type="number" step="0.01" value={formData.salePrice} onChange={handleNumberFieldChange} />
                 </div>
                 <div>
+                  <Label htmlFor="costPrice">Cost Price</Label>
+                  <Input id="costPrice" type="number" step="0.01" value={formData.costPrice} onChange={handleNumberFieldChange} />
+                </div>
+                <div>
                   <Label htmlFor="stockQuantity">Stock Quantity</Label>
                   <Input id="stockQuantity" type="number" value={formData.stockQuantity} onChange={handleNumberFieldChange} />
                 </div>
                 <div>
+                  <Label htmlFor="lowStockThreshold">Low Stock Threshold</Label>
+                  <Input id="lowStockThreshold" type="number" value={formData.lowStockThreshold} onChange={handleNumberFieldChange} />
+                </div>
+                <div>
                   <Label htmlFor="weight">Weight (kg)</Label>
                   <Input id="weight" type="number" step="0.01" value={formData.weight} onChange={handleNumberFieldChange} />
+                </div>
+                <div>
+                  <Label htmlFor="dimensions">Dimensions</Label>
+                  <Input id="dimensions" value={formData.dimensions} onChange={handleMainFieldChange} />
+                </div>
+                <div>
+                  <Label htmlFor="material">Material</Label>
+                  <Input id="material" value={formData.material} onChange={handleMainFieldChange} />
+                </div>
+                <div>
+                  <Label htmlFor="color">Color</Label>
+                  <Input id="color" value={formData.color} onChange={handleMainFieldChange} />
                 </div>
                 <div>
                   <Label htmlFor="size">Size</Label>
@@ -272,20 +545,32 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
                   <Input id="warrantyPeriod" type="number" value={formData.warrantyPeriod} onChange={handleNumberFieldChange} />
                 </div>
               </div>
+              <div>
+                <Label htmlFor="careInstructions">Care Instructions</Label>
+                <Textarea id="careInstructions" rows={2} value={formData.careInstructions} onChange={handleMainFieldChange} />
+              </div>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
-                  <Checkbox id="isFeatured" checked={formData.isFeatured} onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isFeatured: Boolean(checked) }))} />
+                  <Checkbox 
+                    id="isFeatured" 
+                    checked={formData.isFeatured} 
+                    onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isFeatured: Boolean(checked) }))} 
+                  />
                   <Label htmlFor="isFeatured">Featured</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Checkbox id="isActive" checked={formData.isActive} onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isActive: Boolean(checked) }))} />
+                  <Checkbox 
+                    id="isActive" 
+                    checked={formData.isActive} 
+                    onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isActive: Boolean(checked) }))} 
+                  />
                   <Label htmlFor="isActive">Active</Label>
                 </div>
                 <div>
                   <Label htmlFor="status">Status</Label>
                   <Select
                     value={formData.status}
-                    onValueChange={(value: 'active' | 'draft' | 'archived') =>
+                    onValueChange={(value: 'draft' | 'active' | 'inactive' | 'out_of_stock') =>
                       setFormData((prev) => ({ ...prev, status: value }))
                     }
                   >
@@ -295,44 +580,66 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
                     <SelectContent>
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="archived">Archived</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="out_of_stock">Out of Stock</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="metaTitle">Meta Title (SEO)</Label>
+                  <Input id="metaTitle" value={formData.metaTitle} onChange={handleMainFieldChange} />
+                </div>
+                <div>
+                  <Label htmlFor="metaDescription">Meta Description (SEO)</Label>
+                  <Textarea id="metaDescription" rows={2} value={formData.metaDescription} onChange={handleMainFieldChange} />
                 </div>
               </div>
             </div>
 
             {/* Main Images Upload Section */}
             <div className="space-y-4 border-b pb-4">
-              <h2 className="text-lg font-semibold">Product Images</h2>
+              <h2 className="text-lg font-semibold">Product Images *</h2>
               <div>
                 <Label htmlFor="main-image-upload">Upload Images</Label>
                 <div className="space-y-2">
-                  <Input
-                    id="main-image-upload"
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleMainImageChange}
-                  />
-                  {/* <div className="flex flex-wrap gap-2">
-                    {mainImagePreviews.map((image, index) => (
-                      <Badge key={index} variant="secondary" className="flex items-center gap-1 p-1">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="main-image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleMainImageChange}
+                      disabled={isUploading}
+                    />
+                    {isUploading && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Uploading...
+                      </div>
+                    )}
+                  </div>
+                  {mainImagePreview && (
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="secondary" className="flex items-center gap-1 p-1">
                         <img
-                          src={image}
-                          alt={`Product preview ${index + 1}`}
+                          src={mainImagePreview}
+                          alt="Product preview"
                           className="h-12 w-12 object-cover rounded-sm"
                         />
                         <button
                           type="button"
-                          onClick={() => removeMainImage(index)}
+                          onClick={() => removeMainImage()}
                           className="ml-1 hover:text-destructive"
                         >
                           <X className="w-3 h-3" />
                         </button>
                       </Badge>
-                    ))}
-                  </div> */}
+                    </div>
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    {formData.imageUrl.imageUrl ? '1 image uploaded' : 'No image uploaded'}. Product image is required.
+                  </p>
                 </div>
               </div>
             </div>
@@ -340,7 +647,7 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
             {/* Product Variants Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Product Variants</h2>
+                <h2 className="text-lg font-semibold">Product Variants (Optional)</h2>
                 <Button type="button" onClick={addVariant} size="sm">
                   <Plus className="w-4 h-4 mr-2" /> Add Variant
                 </Button>
@@ -348,7 +655,7 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
 
               {formData.variants.length === 0 && (
                 <p className="text-sm text-muted-foreground">
-                  No variants added yet.
+                  No variants added yet. Add variants for different colors, sizes, or other variations.
                 </p>
               )}
 
@@ -375,6 +682,7 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
                           name="variantType"
                           value={variant.variantType}
                           onChange={(e) => handleVariantChange(index, e)}
+                          placeholder="e.g., Color, Size"
                         />
                       </div>
                       <div>
@@ -384,6 +692,7 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
                           name="variantValue"
                           value={variant.variantValue}
                           onChange={(e) => handleVariantChange(index, e)}
+                          placeholder="e.g., Red, Large"
                         />
                       </div>
                     </div>
@@ -407,6 +716,7 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
                           step="0.01"
                           value={variant.priceAdjustment}
                           onChange={(e) => handleVariantNumberChange(index, e)}
+                          placeholder="0.00 (+ or - from base price)"
                         />
                       </div>
                     </div>
@@ -414,31 +724,39 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
                     {/* Variant Images Section */}
                     <div className="mt-4 space-y-2">
                       <Label htmlFor={`variant-image-upload-${index}`}>Upload Variant Images</Label>
-                      <Input
-                        id={`variant-image-upload-${index}`}
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={(e) => handleVariantImageChange(index, e)}
-                      />
-                      <div className="flex flex-wrap gap-2">
-                        {variantPreviews[index]?.map((image, imageIndex) => (
-                          <Badge key={imageIndex} variant="secondary" className="flex items-center gap-1 p-1">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id={`variant-image-upload-${index}`}
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleVariantImageChange(index, e)}
+                          disabled={uploadingVariantIndex === index}
+                        />
+                        {uploadingVariantIndex === index && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Uploading...
+                          </div>
+                        )}
+                      </div>
+                      {variantPreviews[index] && (
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="secondary" className="flex items-center gap-1 p-1">
                             <img
-                              src={image}
-                              alt={`Variant preview ${imageIndex + 1}`}
+                              src={variantPreviews[index]}
+                              alt="Variant preview"
                               className="h-12 w-12 object-cover rounded-sm"
                             />
                             <button
                               type="button"
-                              onClick={() => removeVariantImage(index, imageIndex)}
+                              onClick={() => removeVariantImage(index)}
                               className="ml-1 hover:text-destructive"
                             >
                               <X className="w-3 h-3" />
                             </button>
                           </Badge>
-                        ))}
-                      </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center space-x-2 mt-4">
@@ -460,11 +778,17 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
             </div>
 
             <div className="flex justify-end gap-4 pt-4">
-              <Button type="button" variant="outline" onClick={onCancel}>
+              <Button type="button" variant="outline" onClick={onCancel} disabled={isCreatingProduct}>
                 Cancel
               </Button>
-              <Button type="submit" className="bg-gradient-to-r from-primary to-primary/90">
-                {product ? 'Update Product' : 'Create Product'}
+              <Button type="submit" className="bg-gradient-to-r from-primary to-primary/90" disabled={isCreatingProduct}>
+                {isCreatingProduct ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  </>
+                ) : (
+                  product ? 'Update Product' : 'Create Product'
+                )}
               </Button>
             </div>
           </form>

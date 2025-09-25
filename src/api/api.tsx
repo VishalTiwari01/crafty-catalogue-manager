@@ -1,12 +1,43 @@
 // src/api/api.tsx
 
 import { Product } from '@/types/product';
+import { Order } from "@/types/order";
+import axios from "axios";
+
 
 const API_BASE_URL = 'http://localhost:1209/api';
 
 interface SaveProductResponse {
   id: string;
+  message?: string;
 }
+
+
+
+import { signIn } from "@/redux/slices/authSlice";
+
+
+
+export const loginUser = async (mobile, dispatch) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/users/login`, {
+      phoneNumber: mobile,
+    });
+
+    const userData = response.data;
+
+    localStorage.setItem("user", JSON.stringify(userData));
+    localStorage.setItem("token", userData.accessToken);
+
+    dispatch(signIn({ user: userData, token: userData.accessToken }));
+
+    return userData;
+  } catch (error) {
+    const errorMsg =
+      error.response?.data?.message || "Login failed. Please try again.";
+    throw new Error(errorMsg);
+  }
+};
 
 export const createProduct = async (
   productData: Partial<Product>,
@@ -15,15 +46,19 @@ export const createProduct = async (
 ): Promise<SaveProductResponse> => {
   try {
     const formData = new FormData();
+
+    // Serialize product JSON data
     formData.append('data', JSON.stringify(productData));
 
+    // Append main product images
     mainFiles.forEach((file) => {
-      formData.append('mainImages', file);
+      formData.append('mainImages', file); // backend must support multiple 'mainImages'
     });
 
-    Object.keys(variantFiles).forEach((variantIndex) => {
-      variantFiles[parseInt(variantIndex, 10)].forEach((file) => {
-        formData.append(`variantImages[${variantIndex}]`, file);
+    // Append variant images
+    Object.entries(variantFiles).forEach(([variantIndex, files]) => {
+      files.forEach((file) => {
+        formData.append(`variantImages[${variantIndex}]`, file); // e.g., variantImages[0], variantImages[1], etc.
       });
     });
 
@@ -33,15 +68,17 @@ export const createProduct = async (
     });
 
     if (!response.ok) {
-      throw new Error(`Error: ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`Failed to create product: ${errorText}`);
     }
 
     return await response.json();
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating product:', error);
-    throw error;
+    throw new Error(error?.message || 'Unknown error while creating product');
   }
 };
+
 
 export const updateProduct = async (
   id: string,
@@ -104,5 +141,19 @@ export const fetchProducts = async (): Promise<Product[]> => {
   } catch (error) {
     console.error('Error fetching products:', error);
     return []; // Return an empty array on error
+  }
+};
+
+
+export const getAllOrders = async (): Promise<Order[]> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/orders`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch orders");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    return [];
   }
 };

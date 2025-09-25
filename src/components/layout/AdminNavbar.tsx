@@ -106,10 +106,10 @@ export function AdminNavbar() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile</DropdownMenuItem>
+              {/* <DropdownMenuItem>Profile</DropdownMenuItem>
               <DropdownMenuItem>Billing</DropdownMenuItem>
               <DropdownMenuItem>Team</DropdownMenuItem>
-              <DropdownMenuItem>Subscription</DropdownMenuItem>
+              <DropdownMenuItem>Subscription</DropdownMenuItem> */}
               <DropdownMenuSeparator />
               <DropdownMenuItem className="text-destructive focus:text-destructive">
                 Log out

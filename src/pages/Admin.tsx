@@ -68,10 +68,10 @@ const Admin = () => {
   };
 
   // Modified to handle API call
-  const handleDeleteProduct = async (id: number) => {
+  const handleDeleteProduct = async (id: string) => {
     try {
       await deleteProduct(id);
-      setProducts(prev => prev.filter(p => p.id !== id));
+      setProducts(prev => prev.filter(p => p._id !== id));
       toast({
         title: "Product Deleted",
         description: `The product has been removed from the catalog.`,

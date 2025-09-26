@@ -18,7 +18,7 @@ import React from "react";
 interface ProductListProps {
   products: Product[];
   onEdit: (product: Product) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: string) => void;
 }
 
 export const ProductList = ({ products, onEdit, onDelete }: ProductListProps) => {
@@ -28,7 +28,7 @@ export const ProductList = ({ products, onEdit, onDelete }: ProductListProps) =>
   const filteredProducts = products.filter(
     (product) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchTerm.toLowerCase())
+      product.categoryId.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleDelete = (product: Product) => {
@@ -61,14 +61,14 @@ export const ProductList = ({ products, onEdit, onDelete }: ProductListProps) =>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {filteredProducts.map((product) => (
           <Card
-            key={product.id ?? `${product.name}-${product.price}`} // ✅ Unique key fallback
+            key={product._id ?? `${product.name}-${product.price}`} // ✅ Unique key fallback
             className="overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 relative"
           >
             {/* Product Image */}
             <div className="relative">
-              {product.images?.[0] ? (
+              {product.imageUrl?.[0] ? (
                 <img
-                  src={product.images[0]}
+                  src={product.imageUrl[0].imageUrl}
                   alt={product.name}
                   className="w-full h-48 object-cover"
                 />
@@ -108,7 +108,7 @@ export const ProductList = ({ products, onEdit, onDelete }: ProductListProps) =>
             <CardContent className="p-4">
               <div className="mb-1">
                 <h3 className="text-lg font-semibold truncate">{product.name}</h3>
-                <p className="text-sm text-muted-foreground">{product.category}</p>
+                <p className="text-sm text-muted-foreground">{product.categoryId}</p>
               </div>
 
               {/* Price */}

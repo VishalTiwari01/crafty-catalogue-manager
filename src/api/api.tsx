@@ -144,7 +144,18 @@ export const fetchProducts = async (): Promise<Product[]> => {
   }
 };
 
+export const getAllOrders = async (orderId?: string | null) => {
+ 
+  const token = localStorage.getItem("token");
 
+  const response = await axios.get(`${API_BASE_URL}/orders`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.data;
+};
 
 export const getOrderById = async (orderId?: string | null) => {
   if (!orderId) throw new Error("Order ID is required");

@@ -26,6 +26,7 @@ export interface Product {
   isFeatured: boolean;
   isActive: boolean;
   status: 'active' | 'draft' | 'archived';
+  imageUrl: any[]; // Updated to an array of image URLs
   variants: ProductVariant[];
   // images: string[]; // URLs for the main product images
   slug?: string;

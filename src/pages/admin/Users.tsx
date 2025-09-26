@@ -25,6 +25,7 @@ const Orders = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       const data = await getAllOrders();
+      console.log("Fetched Orders:", data);
       setOrders(data);
     };
     fetchOrders();

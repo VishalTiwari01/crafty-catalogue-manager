@@ -1,11 +1,9 @@
-// src/api/api.tsx
-
 import { Product } from '@/types/product';
 import { Order } from "@/types/order";
 import axios from "axios";
 
 
-const API_BASE_URL = 'http://localhost:1209/api';
+const API_BASE_URL =  'https://monkfish-app-phfed.ondigitalocean.app/api';
 
 interface SaveProductResponse {
   id: string;

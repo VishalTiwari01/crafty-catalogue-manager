@@ -1,3 +1,5 @@
+// src/pages/Orders.tsx
+
 import { useEffect, useState } from "react";
 import { getAllOrders } from "@/api/api";
 import { Order } from "@/types/order";
@@ -35,6 +37,7 @@ const Orders = () => {
               <TableRow>
                 <TableHead>Order #</TableHead>
                 <TableHead>Payment</TableHead>
+                <TableHead>Payment Status</TableHead>
                 <TableHead>Currency</TableHead>
                 <TableHead>Billing Name</TableHead>
                 <TableHead>Billing Address</TableHead>
@@ -53,12 +56,13 @@ const Orders = () => {
                   (addr) => addr.type === "billing"
                 );
 
-                // Render a single row if no items
+                // Handle orders with no items
                 if (items.length === 0) {
                   return (
                     <TableRow key={order._id}>
                       <TableCell>{order.orderNumber}</TableCell>
                       <TableCell>{order.paymentMethod}</TableCell>
+                      <TableCell>{order.paymentStatus}</TableCell>
                       <TableCell>{order.currency}</TableCell>
                       <TableCell>{billingAddress?.name || "N/A"}</TableCell>
                       <TableCell>
@@ -83,13 +87,14 @@ const Orders = () => {
                   );
                 }
 
-                // If order has items, render with rowSpan
+                // Render order with items
                 return items.map((item, idx) => (
                   <TableRow key={`${order._id}-${idx}`}>
                     {idx === 0 && (
                       <>
                         <TableCell rowSpan={items.length}>{order.orderNumber}</TableCell>
                         <TableCell rowSpan={items.length}>{order.paymentMethod}</TableCell>
+                        <TableCell rowSpan={items.length}>{order.paymentStatus}</TableCell>
                         <TableCell rowSpan={items.length}>{order.currency}</TableCell>
                         <TableCell rowSpan={items.length}>{billingAddress?.name || "N/A"}</TableCell>
                         <TableCell rowSpan={items.length}>

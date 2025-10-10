@@ -454,7 +454,7 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
 
       onCancel();
     } catch (error) {
-      console.error('Product operation error:', error);
+      // console.error('Product operation error:', error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : `Failed to ${product?._id ? 'update' : 'create'} product.`,

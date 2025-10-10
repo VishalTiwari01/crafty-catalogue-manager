@@ -114,7 +114,7 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
         status: product.status ?? 'active',
         variants: Array.isArray(product.variants)
           ? product.variants.map((variant) => ({
-            productId: variant.productId ?? '',
+            productId: variant.productId ?? null,
             variantType: variant.variantType ?? 'Color',
             variantValue: variant.variantValue ?? '',
             priceAdjustment: variant.priceAdjustment ?? 0,

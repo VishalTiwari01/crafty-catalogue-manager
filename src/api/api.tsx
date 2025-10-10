@@ -39,8 +39,8 @@ export const loginUser = async (mobile, dispatch) => {
 
 export const createProduct = async (
   productData: Partial<Product>,
-  mainFiles: File[],
-  variantFiles: { [key: number]: File[] }
+  mainFiles: File[] = [],
+  variantFiles: { [key: number]: File[] } = {}
 ): Promise<SaveProductResponse> => {
   try {
     const formData = new FormData();
@@ -49,16 +49,18 @@ export const createProduct = async (
     formData.append('data', JSON.stringify(productData));
 
     // Append main product images
-    mainFiles.forEach((file) => {
-      formData.append('mainImages', file); // backend must support multiple 'mainImages'
+    mainFiles?.forEach((file) => {
+      formData.append('mainImages', file);
     });
 
-    // Append variant images
-    Object.entries(variantFiles).forEach(([variantIndex, files]) => {
-      files.forEach((file) => {
-        formData.append(`variantImages[${variantIndex}]`, file); // e.g., variantImages[0], variantImages[1], etc.
+    // Append variant images (only if variantFiles is defined and not null)
+    if (variantFiles && typeof variantFiles === 'object') {
+      Object.entries(variantFiles).forEach(([variantIndex, files]) => {
+        files?.forEach((file) => {
+          formData.append(`variantImages[${variantIndex}]`, file);
+        });
       });
-    });
+    }
 
     const response = await fetch(`${API_BASE_URL}/products`, {
       method: 'POST',

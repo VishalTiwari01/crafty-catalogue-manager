@@ -1,5 +1,3 @@
-// src/pages/Orders.tsx
-
 import { useEffect, useState } from "react";
 import { getAllOrders } from "@/api/api";
 import { Order } from "@/types/order";
@@ -49,24 +47,27 @@ const Orders = () => {
             </TableHeader>
 
             <TableBody>
-              {orders.flatMap((order) => {
+              {orders.map((order) => {
                 const items = order.items ?? [];
+                const billingAddress = order.addresses?.find(
+                  (addr) => addr.type === "billing"
+                );
 
-                // If no items, return a single row with empty product fields
+                // Render a single row if no items
                 if (items.length === 0) {
                   return (
                     <TableRow key={order._id}>
                       <TableCell>{order.orderNumber}</TableCell>
                       <TableCell>{order.paymentMethod}</TableCell>
                       <TableCell>{order.currency}</TableCell>
-                      <TableCell>{order.billingAddress?.name || "N/A"}</TableCell>
+                      <TableCell>{billingAddress?.name || "N/A"}</TableCell>
                       <TableCell>
-                        {order.billingAddress
+                        {billingAddress
                           ? [
-                              order.billingAddress.addressLine1,
-                              order.billingAddress.addressLine2,
-                              `${order.billingAddress.city}, ${order.billingAddress.state} ${order.billingAddress.postalCode}`,
-                              order.billingAddress.country,
+                              billingAddress.addressLine1,
+                              billingAddress.addressLine2,
+                              `${billingAddress.city}, ${billingAddress.state} ${billingAddress.postalCode}`,
+                              billingAddress.country,
                             ]
                               .filter(Boolean)
                               .join(", ")
@@ -82,30 +83,40 @@ const Orders = () => {
                   );
                 }
 
-                // If order has items, map them
+                // If order has items, render with rowSpan
                 return items.map((item, idx) => (
                   <TableRow key={`${order._id}-${idx}`}>
-                    <TableCell>{order.orderNumber}</TableCell>
-                    <TableCell>{order.paymentMethod}</TableCell>
-                    <TableCell>{order.currency}</TableCell>
-                    <TableCell>{order.billingAddress?.name || "N/A"}</TableCell>
-                    <TableCell>
-                      {order.billingAddress
-                        ? [
-                            order.billingAddress.addressLine1,
-                            order.billingAddress.addressLine2,
-                            `${order.billingAddress.city}, ${order.billingAddress.state} ${order.billingAddress.postalCode}`,
-                            order.billingAddress.country,
-                          ]
-                            .filter(Boolean)
-                            .join(", ")
-                        : "N/A"}
-                    </TableCell>
+                    {idx === 0 && (
+                      <>
+                        <TableCell rowSpan={items.length}>{order.orderNumber}</TableCell>
+                        <TableCell rowSpan={items.length}>{order.paymentMethod}</TableCell>
+                        <TableCell rowSpan={items.length}>{order.currency}</TableCell>
+                        <TableCell rowSpan={items.length}>{billingAddress?.name || "N/A"}</TableCell>
+                        <TableCell rowSpan={items.length}>
+                          {billingAddress
+                            ? [
+                                billingAddress.addressLine1,
+                                billingAddress.addressLine2,
+                                `${billingAddress.city}, ${billingAddress.state} ${billingAddress.postalCode}`,
+                                billingAddress.country,
+                              ]
+                                .filter(Boolean)
+                                .join(", ")
+                            : "N/A"}
+                        </TableCell>
+                      </>
+                    )}
+
                     <TableCell>{item.productName}</TableCell>
                     <TableCell>{item.quantity}</TableCell>
-                    <TableCell>{order.currency} {order.subtotal.toFixed(2)}</TableCell>
-                    <TableCell>{order.currency} {order.taxAmount.toFixed(2)}</TableCell>
-                    <TableCell>{order.currency} {order.totalAmount.toFixed(2)}</TableCell>
+
+                    {idx === 0 && (
+                      <>
+                        <TableCell rowSpan={items.length}>{order.currency} {order.subtotal.toFixed(2)}</TableCell>
+                        <TableCell rowSpan={items.length}>{order.currency} {order.taxAmount.toFixed(2)}</TableCell>
+                        <TableCell rowSpan={items.length}>{order.currency} {order.totalAmount.toFixed(2)}</TableCell>
+                      </>
+                    )}
                   </TableRow>
                 ));
               })}

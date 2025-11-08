@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -10,46 +11,65 @@ import {
   Eye,
   UserPlus
 } from "lucide-react";
+import { getAllOrders } from "@/api/api";
 
 const Dashboard = () => {
-  const stats = [
-    {
-      title: "Total Users",
-      value: "2,543",
-      description: "Active registered users",
-      icon: Users,
-      trend: { value: 12.5, label: "from last month", isPositive: true },
-    },
-    {
-      title: "Revenue",
-      value: "$45,231",
-      description: "Total revenue this month",
-      icon: DollarSign,
-      trend: { value: 8.2, label: "from last month", isPositive: true },
-    },
-    {
-      title: "Orders",
-      value: "1,234",
-      description: "Total orders processed",
-      icon: ShoppingCart,
-      trend: { value: -2.4, label: "from last month", isPositive: false },
-    },
-    {
-      title: "Active Sessions",
-      value: "573",
-      description: "Users currently online",
-      icon: Activity,
-      trend: { value: 15.3, label: "from last hour", isPositive: true },
-    },
-  ];
+  const [stats, setStats] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const recentActivity = [
-    { action: "New user registered", user: "John Doe", time: "2 minutes ago", type: "user" },
-    { action: "Product updated", item: "Art & Craft Set", time: "1 hour ago", type: "product" },
-    { action: "Order completed", order: "#12345", time: "2 hours ago", type: "order" },
-    { action: "New review posted", product: "Building Blocks Pro", time: "3 hours ago", type: "review" },
-    { action: "User profile updated", user: "Jane Smith", time: "5 hours ago", type: "user" },
-  ];
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        // Fetch all orders
+        const orders = await getAllOrders();
+
+        // ✅ Calculate total orders and total revenue
+        const totalOrders = orders.length;
+        const totalRevenue = orders.reduce(
+          (sum: number, order: any) => sum + (order.totalAmount || 0),
+          0
+        );
+
+        // 👇 Now dynamically set your dashboard cards
+        setStats([
+          {
+            title: "Total Users",
+            value: "2,543", // Replace with real user data when ready
+            description: "Active registered users",
+            icon: Users,
+            trend: { value: 12.5, label: "from last month", isPositive: true },
+          },
+          {
+            title: "Revenue",
+            value: `₹${totalRevenue.toLocaleString()}`,
+            description: "Total revenue (all orders)",
+            icon: DollarSign,
+            trend: { value: 8.2, label: "from last month", isPositive: true },
+          },
+          {
+            title: "Orders",
+            value: totalOrders.toLocaleString(),
+            description: "Total orders processed",
+            icon: ShoppingCart,
+            trend: { value: 5.4, label: "from last month", isPositive: true },
+          },
+          {
+            title: "Active Sessions",
+            value: "573",
+            description: "Users currently online",
+            icon: Activity,
+            trend: { value: 15.3, label: "from last hour", isPositive: true },
+          },
+        ]);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -66,17 +86,29 @@ const Dashboard = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64 text-muted-foreground">
+        Loading dashboard data...
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here's what's happening with your store.</p>
+          <p className="text-muted-foreground">
+            Welcome back! Here’s what’s happening with your store.
+          </p>
         </div>
         <div className="flex items-center space-x-2">
           <TrendingUp className="h-5 w-5 text-success" />
-          <span className="text-sm font-medium text-success">All systems operational</span>
+          <span className="text-sm font-medium text-success">
+            All systems operational
+          </span>
         </div>
       </div>
 
@@ -87,9 +119,8 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Charts and Activity Row */}
+      {/* Charts and Activity */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-        {/* Revenue Chart Placeholder */}
         <Card className="col-span-4">
           <CardHeader>
             <CardTitle>Revenue Overview</CardTitle>
@@ -98,41 +129,17 @@ const Dashboard = () => {
             <div className="h-80 flex items-center justify-center bg-muted/20 rounded-lg">
               <div className="text-center">
                 <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">Revenue chart would go here</p>
-                <p className="text-sm text-muted-foreground mt-2">Integration with charting library needed</p>
+                <p className="text-muted-foreground">
+                  Revenue chart would go here
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Integration with charting library needed
+                </p>
               </div>
             </div>
           </CardContent>
         </Card>
-
-        {/* Recent Activity */}
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-start space-x-3">
-                  <div className="flex-shrink-0 mt-1">
-                    {getActivityIcon(activity.type)}
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium">{activity.action}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {activity.user || activity.item || activity.order || activity.product}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{activity.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       </div>
-
-      {/* Quick Actions */}
-     
     </div>
   );
 };

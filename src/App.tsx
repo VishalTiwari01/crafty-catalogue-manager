@@ -16,70 +16,77 @@ import Orders from "./pages/admin/Users";
 import { Provider } from "react-redux";
 import { store } from "./redux/store";
 const queryClient = new QueryClient();
-import Login from './pages/Login';
-import PrivateRoute from './components/PrivateRoute';
+import Login from "./pages/Login";
+import PrivateRoute from "./components/PrivateRoute";
 
 const App = () => (
   <Provider store={store}>
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="system" storageKey="admin-panel-theme">
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-       
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="system" storageKey="admin-panel-theme">
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Login />} />
 
-<Routes>
-  <Route path="/" element={<Login />} />
-  
-  {/* Protected Routes */}
-  <Route
-    path="/admin"
-    element={
-      <PrivateRoute>
-        <AdminLayout><Dashboard /></AdminLayout>
-      </PrivateRoute>
-    }
-  />
-  <Route
-    path="/admin/products"
-    element={
-      <PrivateRoute>
-        <AdminLayout><Admin /></AdminLayout>
-      </PrivateRoute>
-    }
-  />
-  <Route
-    path="/admin/users"
-    element={
-      <PrivateRoute>
-        <AdminLayout><Orders /></AdminLayout>
-      </PrivateRoute>
-    }
-  />
-  <Route
-    path="/admin/analytics"
-    element={
-      <PrivateRoute>
-        <AdminLayout><Analytics /></AdminLayout>
-      </PrivateRoute>
-    }
-  />
-  <Route
-    path="/admin/settings"
-    element={
-      <PrivateRoute>
-        <AdminLayout><Settings /></AdminLayout>
-      </PrivateRoute>
-    }
-  />
-  <Route path="*" element={<NotFound />} />
-</Routes>
-
-        </BrowserRouter>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+              {/* Protected Routes */}
+              <Route
+                path="/admin"
+                element={
+                  <PrivateRoute>
+                    <AdminLayout>
+                      <Dashboard />
+                    </AdminLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin/products"
+                element={
+                  <PrivateRoute>
+                    <AdminLayout>
+                      <Admin />
+                    </AdminLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <PrivateRoute>
+                    <AdminLayout>
+                      <Orders />
+                    </AdminLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin/analytics"
+                element={
+                  <PrivateRoute>
+                    <AdminLayout>
+                      <Analytics />
+                    </AdminLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin/settings"
+                element={
+                  <PrivateRoute>
+                    <AdminLayout>
+                      <Settings />
+                    </AdminLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   </Provider>
 );
 

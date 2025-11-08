@@ -59,11 +59,7 @@ const Admin = () => {
       setShowForm(false);
       setEditingProduct(undefined);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: `Failed to save product. Please try again.`,
-        variant: 'destructive'
-      });
+      
     }
   };
 

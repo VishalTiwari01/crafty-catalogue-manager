@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import {
   Search,
   Star,
-  DollarSign,
   Package,
   Edit2,
   Trash2,
@@ -21,15 +20,23 @@ interface ProductListProps {
   onDelete: (id: string) => void;
 }
 
+const formatPrice = (value?: number | null) => {
+  // If value is undefined/null/NaN, show 0.00 (or you can return "-" if you prefer)
+  const num = typeof value === "number" && !Number.isNaN(value) ? value : 0;
+  return num.toFixed(2);
+};
+
 export const ProductList = ({ products, onEdit, onDelete }: ProductListProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
-  const filteredProducts = products.filter(
-    (product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.categoryId.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProducts = products.filter((product) => {
+    const name = (product.name ?? "").toString().toLowerCase();
+    // categoryId might be an id string or missing — fall back to empty string
+    const category = (product.categoryId ?? "").toString().toLowerCase();
+    const term = searchTerm.toLowerCase();
+    return name.includes(term) || category.includes(term);
+  });
 
   const handleDelete = (product: Product) => {
     if (window.confirm(`Are you sure you want to delete "${product.name}"?`)) {
@@ -40,7 +47,6 @@ export const ProductList = ({ products, onEdit, onDelete }: ProductListProps) =>
       });
     }
   };
-
 
   return (
     <div className="space-y-6">
@@ -59,86 +65,96 @@ export const ProductList = ({ products, onEdit, onDelete }: ProductListProps) =>
 
       {/* Product Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredProducts.map((product) => (
-          <Card
-            key={product._id ?? `${product.name}-${product.price}`} // ✅ Unique key fallback
-            className="overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 relative"
-          >
-            {/* Product Image */}
-            <div className="relative">
-              {product.imageUrl?.[0] ? (
-                <img
-                  src={product.imageUrl[0].imageUrl}
-                  alt={product.name}
-                  className="w-full h-48 object-cover"
-                />
-              ) : (
-                <div className="w-full h-48 flex items-center justify-center bg-gray-200 text-gray-400">
-                  No Image
-                </div>
-              )}
-              {product.isFeatured && (
-                <Badge variant="secondary" className="absolute top-2 left-2">
-                  Featured
-                </Badge>
-              )}
+        {filteredProducts.map((product) => {
+          // safe local values
+          const salePriceFormatted = formatPrice(product.salePrice);
+          const priceFormatted = formatPrice(product.price);
+          const rating = typeof product.rating === "number" ? product.rating : 0;
+          const reviewCount = typeof product.reviewCount === "number" ? product.reviewCount : 0;
+          const stockQuantity = typeof product.stockQuantity === "number" ? product.stockQuantity : 0;
 
-              {/* Edit & Delete Icons */}
-              <div className="absolute top-2 right-2 flex space-x-2 bg-white/80 p-1 rounded-md shadow-sm">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="text-blue-600 hover:bg-blue-100"
-                  onClick={() => onEdit(product)}
-                >
-                  <Edit2 className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="text-red-600 hover:bg-red-100"
-                  onClick={() => handleDelete(product)}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Product Details */}
-            <CardContent className="p-4">
-              <div className="mb-1">
-                <h3 className="text-lg font-semibold truncate">{product.name}</h3>
-                <p className="text-sm text-muted-foreground">{product.categoryId}</p>
-              </div>
-
-              {/* Price */}
-              <div className="flex items-center justify-between mt-2">
-                <p className="text-xl font-bold text-primary">
-                  ₹{product.price.toFixed(2)}
-                </p>
-                {product.salePrice > 0 && (
-                  <p className="text-sm text-muted-foreground line-through ml-2">
-                    ₹{product.salePrice.toFixed(2)}
-                  </p>
+          return (
+            <Card
+              key={product._id ?? `${product.name}-${product.price}`}
+              className="overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 relative"
+            >
+              {/* Product Image */}
+              <div className="relative">
+                {product.imageUrl?.[0] ? (
+                  <img
+                    src={product.imageUrl[0].imageUrl}
+                    alt={product.name}
+                    className="w-full h-48 object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-48 flex items-center justify-center bg-gray-200 text-gray-400">
+                    No Image
+                  </div>
                 )}
+                {product.isFeatured && (
+                  <Badge variant="secondary" className="absolute top-2 left-2">
+                    Featured
+                  </Badge>
+                )}
+
+                {/* Edit & Delete Icons */}
+                <div className="absolute top-2 right-2 flex space-x-2 bg-white/80 p-1 rounded-md shadow-sm">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="text-blue-600 hover:bg-blue-100"
+                    onClick={() => onEdit(product)}
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="text-red-600 hover:bg-red-100"
+                    onClick={() => handleDelete(product)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
 
-              {/* Ratings & Stock */}
-              <div className="flex items-center justify-between text-sm mt-2 text-muted-foreground">
-                <div className="flex items-center space-x-1">
-                  <Star className="w-4 h-4" />
-                  <span>
-                    {product.rating} ({product.reviewCount})
-                  </span>
+              {/* Product Details */}
+              <CardContent className="p-4">
+                <div className="mb-1">
+                  <h3 className="text-lg font-semibold truncate">{product.name}</h3>
+                  <p className="text-sm text-muted-foreground">{product.categoryId}</p>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <Package className="w-4 h-4" />
-                  <span>{product.stockQuantity} in stock</span>
+
+                {/* Price */}
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xl font-bold text-primary">
+                    ₹{salePriceFormatted}
+                  </p>
+                  {/* Show original price only if it's > 0 and different from salePrice */}
+                  {Number(product.price) > 0 && Number(product.price) !== Number(product.salePrice) && (
+                    <p className="text-sm text-muted-foreground line-through ml-2">
+                      ₹{priceFormatted}
+                    </p>
+                  )}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+
+                {/* Ratings & Stock */}
+                <div className="flex items-center justify-between text-sm mt-2 text-muted-foreground">
+                  <div className="flex items-center space-x-1">
+                    <Star className="w-4 h-4" />
+                    <span>
+                      {rating} ({reviewCount})
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Package className="w-4 h-4" />
+                    <span>{stockQuantity} in stock</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* No Results */}
@@ -147,9 +163,7 @@ export const ProductList = ({ products, onEdit, onDelete }: ProductListProps) =>
           <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">No products found</h3>
           <p className="text-muted-foreground">
-            {searchTerm
-              ? "Try adjusting your search terms."
-              : "Get started by adding your first product."}
+            {searchTerm ? "Try adjusting your search terms." : "Get started by adding your first product."}
           </p>
         </div>
       )}

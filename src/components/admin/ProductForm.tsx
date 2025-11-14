@@ -114,7 +114,7 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
         status: product.status ?? 'active',
         variants: Array.isArray(product.variants)
           ? product.variants.map((variant) => ({
-            productId: variant.productId ?? null,
+            // productId: variant.productId ?? null,
             variantType: variant.variantType ?? 'Color',
             variantValue: variant.variantValue ?? '',
             priceAdjustment: variant.priceAdjustment ?? 0,
@@ -304,7 +304,7 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
       variants: [
         ...(prev.variants ?? []),
         {
-          productId: '', // Will be set on submit
+          // productId: '', // Will be set on submit
           variantType: 'Color',
           variantValue: '',
           priceAdjustment: 0,
@@ -346,7 +346,7 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
       status: productData.status ?? 'active',
       imageUrl: productData.imageUrl,
       variants: (productData.variants ?? []).map((variant) => ({
-        productId: variant.productId || product?._id || '', // Use existing productId or leave empty for creation
+        // productId: variant.productId || product?._id || '', // Use existing productId or leave empty for creation
         variantType: variant.variantType,
         variantValue: variant.variantValue,
         priceAdjustment: variant.priceAdjustment || undefined,

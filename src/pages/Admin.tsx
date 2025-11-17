@@ -101,7 +101,7 @@ const Admin = () => {
       {showForm && (
         <ProductForm
           product={editingProduct}
-          onSave={handleSaveProduct}
+          // onSave={handleSaveProduct}
           onCancel={handleCancelForm}
         />
       )}

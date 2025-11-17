@@ -513,23 +513,23 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
                   <Label htmlFor="stockQuantity">Stock Quantity</Label>
                   <Input id="stockQuantity" type="number" value={formData.stockQuantity ?? 0} onChange={handleNumberFieldChange} />
                 </div>
-                <div>
+                {/* <div>
                   <Label htmlFor="weight">Weight (kg)</Label>
                   <Input id="weight" type="number" step="0.01" value={formData.weight ?? 0} onChange={handleNumberFieldChange} />
-                </div>
-                <div>
+                </div> */}
+                {/* <div>
                   <Label htmlFor="size">Size</Label>
                   <Input id="size" value={formData.size ?? ''} onChange={handleMainFieldChange} />
-                </div>
-                <div>
+                </div> */}
+                {/* <div>
                   <Label htmlFor="warrantyPeriod">Warranty Period (months)</Label>
                   <Input id="warrantyPeriod" type="number" value={formData.warrantyPeriod ?? 0} onChange={handleNumberFieldChange} />
-                </div>
+                </div> */}
               </div>
-              <div>
+              {/* <div>
                 <Label htmlFor="careInstructions">Care Instructions</Label>
                 <Textarea id="careInstructions" rows={2} value={formData.careInstructions ?? ''} onChange={handleMainFieldChange} />
-              </div>
+              </div> */}
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                   <Checkbox

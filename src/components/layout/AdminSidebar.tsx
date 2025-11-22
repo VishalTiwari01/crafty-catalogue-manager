@@ -40,6 +40,7 @@ export function AdminSidebar() {
     }
     return currentPath.startsWith(path);
   };
+  
 
   const getNavClassName = (path: string) => {
     return isActive(path)
@@ -113,14 +114,10 @@ export function AdminSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                  <div className="flex items-center">
-                    <LogOut
-                      className={`h-5 w-5 flex-shrink-0 ${
-                        isCollapsed ? "" : "mr-3"
-                      }`}
-                    />
-                    {!isCollapsed && <span>Logout</span>}
-                  </div>
+                  <NavLink to="/" className="flex items-center">
+  <LogOut className={`h-5 w-5 flex-shrink-0 ${isCollapsed ? "" : "mr-3"}`} />
+  {!isCollapsed && <span>Logout</span>}
+</NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

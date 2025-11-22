@@ -1,40 +1,56 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Users, 
-  DollarSign, 
-  ShoppingCart, 
+import {
+  Users,
+  DollarSign,
+  ShoppingCart,
   Activity,
   TrendingUp,
   Package,
   Eye,
-  UserPlus
+  UserPlus,
 } from "lucide-react";
 import { getAllOrders } from "@/api/api";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+
+type RevenuePoint = {
+  label: string;  // x-axis label (date / week / month)
+  revenue: number;
+};
+
+type Timeframe = "daily" | "weekly" | "monthly";
 
 const Dashboard = () => {
   const [stats, setStats] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [timeframe, setTimeframe] = useState<Timeframe>("daily");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // Fetch all orders
-        const orders = await getAllOrders();
+        const fetchedOrders = await getAllOrders();
+        setOrders(fetchedOrders || []);
 
-        // ✅ Calculate total orders and total revenue
-        const totalOrders = orders.length;
-        const totalRevenue = orders.reduce(
+        const totalOrders = fetchedOrders.length || 0;
+        const totalRevenue = fetchedOrders.reduce(
           (sum: number, order: any) => sum + (order.totalAmount || 0),
           0
         );
 
-        // 👇 Now dynamically set your dashboard cards
         setStats([
           {
             title: "Total Users",
-            value: "2,543", // Replace with real user data when ready
+            value: "2,543", // TODO: Replace with real user data
             description: "Active registered users",
             icon: Users,
             trend: { value: 12.5, label: "from last month", isPositive: true },
@@ -70,6 +86,64 @@ const Dashboard = () => {
 
     fetchDashboardData();
   }, []);
+
+  // 🔧 Helper: get order date (createdAt || registrationDate)
+  const getOrderDate = (order: any): Date | null => {
+    const raw = order.createdAt || order.registrationDate;
+    if (!raw) return null;
+    const d = new Date(raw);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  // 🔧 Helper: get week start (Monday) label
+  const getWeekStartLabel = (date: Date): string => {
+    const d = new Date(date);
+    const day = d.getDay(); // 0 (Sun) - 6 (Sat)
+    const diff = (day === 0 ? -6 : 1) - day; // move to Monday
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().slice(0, 10); // YYYY-MM-DD
+  };
+
+  // 🔧 Helper: month label (e.g., "Nov 2025")
+  const getMonthLabel = (date: Date): string => {
+    return date.toLocaleDateString("en-IN", {
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  // 📊 Compute chart data based on selected timeframe
+  const revenueData: RevenuePoint[] = useMemo(() => {
+    const map: Record<string, number> = {};
+
+    orders.forEach((order) => {
+      const date = getOrderDate(order);
+      if (!date) return;
+
+      let key: string;
+
+      if (timeframe === "daily") {
+        key = date.toISOString().slice(0, 10); // YYYY-MM-DD
+      } else if (timeframe === "weekly") {
+        key = getWeekStartLabel(date); // week start date
+      } else {
+        key = getMonthLabel(date); // "Nov 2025"
+      }
+
+      map[key] = (map[key] || 0) + (order.totalAmount || 0);
+    });
+
+    return Object.entries(map)
+      .sort(([a], [b]) => {
+        if (timeframe === "monthly") {
+          // For month labels like "Nov 2025", keep as is (approx alphabetical)
+          return a < b ? -1 : 1;
+        }
+        // For daily/weekly ISO dates, string compare is fine
+        return a < b ? -1 : 1;
+      })
+      .map(([label, revenue]) => ({ label, revenue }));
+  }, [orders, timeframe]);
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -119,24 +193,76 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Charts and Activity */}
+      {/* Charts */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Revenue Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80 flex items-center justify-center bg-muted/20 rounded-lg">
-              <div className="text-center">
-                <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  Revenue chart would go here
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Integration with charting library needed
-                </p>
-              </div>
+
+            {/* 🔽 Timeframe Selector */}
+            <div className="flex items-center space-x-2 text-sm">
+              <span className="text-muted-foreground hidden sm:inline">
+                View:
+              </span>
+              <select
+                value={timeframe}
+                onChange={(e) => setTimeframe(e.target.value as Timeframe)}
+                className="border bg-background text-sm rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
             </div>
+          </CardHeader>
+
+          <CardContent>
+            {revenueData.length === 0 ? (
+              <div className="h-80 flex items-center justify-center bg-muted/20 rounded-lg">
+                <div className="text-center">
+                  <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    Not enough data to display revenue chart yet.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={revenueData}
+                    margin={{ top: 16, right: 24, left: 0, bottom: 8 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 12 }}
+                      minTickGap={16}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 12 }}
+                      tickFormatter={(value) => `₹${value}`}
+                    />
+                    <Tooltip
+                      formatter={(value: any) => [`₹${value}`, "Revenue"]}
+                      labelFormatter={(label) => {
+                        if (timeframe === "daily") return `Date: ${label}`;
+                        if (timeframe === "weekly") return `Week starting: ${label}`;
+                        return `Month: ${label}`;
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="hsl(142, 76%, 36%)"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      activeDot={{ r: 5 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

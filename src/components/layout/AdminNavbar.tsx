@@ -111,9 +111,7 @@ export function AdminNavbar() {
               <DropdownMenuItem>Team</DropdownMenuItem>
               <DropdownMenuItem>Subscription</DropdownMenuItem> */}
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive focus:text-destructive">
-                Log out
-              </DropdownMenuItem>
+              
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

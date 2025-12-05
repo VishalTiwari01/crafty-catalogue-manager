@@ -23,7 +23,7 @@ import {
 } from "recharts";
 
 type RevenuePoint = {
-  label: string;  // x-axis label (date / week / month)
+  label: string;
   revenue: number;
 };
 
@@ -39,42 +39,61 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
       try {
         const fetchedOrders = await getAllOrders();
-        setOrders(fetchedOrders || []);
+        console.log("Fetched orders:", fetchedOrders);
 
-        const totalOrders = fetchedOrders.length || 0;
-        const totalRevenue = fetchedOrders.reduce(
-          (sum: number, order: any) => sum + (order.totalAmount || 0),
+        const safeOrders = Array.isArray(fetchedOrders) ? fetchedOrders : [];
+        setOrders(safeOrders);
+
+        const totalOrders = safeOrders.length;
+        const totalRevenue = safeOrders.reduce(
+          (sum, order) => sum + (order.totalAmount || 0),
           0
         );
 
         setStats([
           {
             title: "Total Users",
-            value: "2,543", // TODO: Replace with real user data
+            value: "2,543",
             description: "Active registered users",
             icon: Users,
-            trend: { value: 12.5, label: "from last month", isPositive: true },
+            trend: {
+              value: 12.5,
+              label: "from last month",
+              isPositive: true,
+            },
           },
           {
             title: "Revenue",
             value: `₹${totalRevenue.toLocaleString()}`,
             description: "Total revenue (all orders)",
             icon: DollarSign,
-            trend: { value: 8.2, label: "from last month", isPositive: true },
+            trend: {
+              value: 8.2,
+              label: "from last month",
+              isPositive: true,
+            },
           },
           {
             title: "Orders",
             value: totalOrders.toLocaleString(),
             description: "Total orders processed",
             icon: ShoppingCart,
-            trend: { value: 5.4, label: "from last month", isPositive: true },
+            trend: {
+              value: 5.4,
+              label: "from last month",
+              isPositive: true,
+            },
           },
           {
             title: "Active Sessions",
             value: "573",
             description: "Users currently online",
             icon: Activity,
-            trend: { value: 15.3, label: "from last hour", isPositive: true },
+            trend: {
+              value: 15.3,
+              label: "from last hour",
+              isPositive: true,
+            },
           },
         ]);
       } catch (error) {
@@ -87,7 +106,6 @@ const Dashboard = () => {
     fetchDashboardData();
   }, []);
 
-  // 🔧 Helper: get order date (createdAt || registrationDate)
   const getOrderDate = (order: any): Date | null => {
     const raw = order.createdAt || order.registrationDate;
     if (!raw) return null;
@@ -95,16 +113,14 @@ const Dashboard = () => {
     return isNaN(d.getTime()) ? null : d;
   };
 
-  // 🔧 Helper: get week start (Monday) label
   const getWeekStartLabel = (date: Date): string => {
     const d = new Date(date);
-    const day = d.getDay(); // 0 (Sun) - 6 (Sat)
-    const diff = (day === 0 ? -6 : 1) - day; // move to Monday
+    const day = d.getDay();
+    const diff = (day === 0 ? -6 : 1) - day;
     d.setDate(d.getDate() + diff);
-    return d.toISOString().slice(0, 10); // YYYY-MM-DD
+    return d.toISOString().slice(0, 10);
   };
 
-  // 🔧 Helper: month label (e.g., "Nov 2025")
   const getMonthLabel = (date: Date): string => {
     return date.toLocaleDateString("en-IN", {
       month: "short",
@@ -112,7 +128,6 @@ const Dashboard = () => {
     });
   };
 
-  // 📊 Compute chart data based on selected timeframe
   const revenueData: RevenuePoint[] = useMemo(() => {
     const map: Record<string, number> = {};
 
@@ -120,28 +135,17 @@ const Dashboard = () => {
       const date = getOrderDate(order);
       if (!date) return;
 
-      let key: string;
+      let key = "";
 
-      if (timeframe === "daily") {
-        key = date.toISOString().slice(0, 10); // YYYY-MM-DD
-      } else if (timeframe === "weekly") {
-        key = getWeekStartLabel(date); // week start date
-      } else {
-        key = getMonthLabel(date); // "Nov 2025"
-      }
+      if (timeframe === "daily") key = date.toISOString().slice(0, 10);
+      else if (timeframe === "weekly") key = getWeekStartLabel(date);
+      else key = getMonthLabel(date);
 
       map[key] = (map[key] || 0) + (order.totalAmount || 0);
     });
 
     return Object.entries(map)
-      .sort(([a], [b]) => {
-        if (timeframe === "monthly") {
-          // For month labels like "Nov 2025", keep as is (approx alphabetical)
-          return a < b ? -1 : 1;
-        }
-        // For daily/weekly ISO dates, string compare is fine
-        return a < b ? -1 : 1;
-      })
+      .sort(([a], [b]) => (a < b ? -1 : 1))
       .map(([label, revenue]) => ({ label, revenue }));
   }, [orders, timeframe]);
 
@@ -170,7 +174,7 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
@@ -178,6 +182,7 @@ const Dashboard = () => {
             Welcome back! Here’s what’s happening with your store.
           </p>
         </div>
+
         <div className="flex items-center space-x-2">
           <TrendingUp className="h-5 w-5 text-success" />
           <span className="text-sm font-medium text-success">
@@ -186,7 +191,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => (
           <DashboardCard key={index} {...stat} />
@@ -199,15 +204,16 @@ const Dashboard = () => {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Revenue Overview</CardTitle>
 
-            {/* 🔽 Timeframe Selector */}
             <div className="flex items-center space-x-2 text-sm">
               <span className="text-muted-foreground hidden sm:inline">
                 View:
               </span>
               <select
                 value={timeframe}
-                onChange={(e) => setTimeframe(e.target.value as Timeframe)}
-                className="border bg-background text-sm rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary"
+                onChange={(e) =>
+                  setTimeframe(e.target.value as Timeframe)
+                }
+                className="border bg-background text-sm rounded-md px-2 py-1"
               >
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
@@ -234,22 +240,13 @@ const Dashboard = () => {
                     margin={{ top: 16, right: 24, left: 0, bottom: 8 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fontSize: 12 }}
-                      minTickGap={16}
-                    />
+                    <XAxis dataKey="label" tick={{ fontSize: 12 }} />
                     <YAxis
                       tick={{ fontSize: 12 }}
                       tickFormatter={(value) => `₹${value}`}
                     />
                     <Tooltip
                       formatter={(value: any) => [`₹${value}`, "Revenue"]}
-                      labelFormatter={(label) => {
-                        if (timeframe === "daily") return `Date: ${label}`;
-                        if (timeframe === "weekly") return `Week starting: ${label}`;
-                        return `Month: ${label}`;
-                      }}
                     />
                     <Line
                       type="monotone"
@@ -257,7 +254,6 @@ const Dashboard = () => {
                       stroke="hsl(142, 76%, 36%)"
                       strokeWidth={2}
                       dot={{ r: 3 }}
-                      activeDot={{ r: 5 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>

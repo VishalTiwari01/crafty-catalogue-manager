@@ -3,8 +3,8 @@ import { Order } from "@/types/order";
 import axios from "axios";
 
 
-const API_BASE_URL =  'https://monkfish-app-phfed.ondigitalocean.app/api';
-// export const API_BASE_URL = 'http://localhost:1209/api'
+// const API_BASE_URL =  'https://monkfish-app-phfed.ondigitalocean.app/api';
+export const API_BASE_URL = 'http://localhost:1209/api'
 interface SaveProductResponse {
   id: string;
   message?: string;
@@ -144,18 +144,30 @@ export const fetchProducts = async (): Promise<Product[]> => {
   }
 };
 
-export const getAllOrders = async (orderId?: string | null) => {
- 
-  const token = localStorage.getItem("token");
+export const getAllOrders = async () => {
+  try {
+    const token = localStorage.getItem("token");
 
-  const response = await axios.get(`${API_BASE_URL}/orders`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+    const response = await axios.get(`${API_BASE_URL}/orders`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-  return response.data;
+    const data = response.data;
+
+    // Normalize output
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.orders)) return data.orders;
+
+    console.warn("Unexpected orders response:", data);
+    return [];
+  } catch (error) {
+    console.error("getAllOrders() failed:", error);
+    return [];
+  }
 };
+
 
 export const getOrderById = async (orderId?: string | null) => {
   if (!orderId) throw new Error("Order ID is required");

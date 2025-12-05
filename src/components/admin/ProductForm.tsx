@@ -91,8 +91,8 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
   const [uploadingVariantIndex, setUploadingVariantIndex] = useState<number | null>(null);
 
   // API base URL
-  const API_BASE_URL =  'https://monkfish-app-phfed.ondigitalocean.app/api';
-  // const API_BASE_URL =  'http://localhost:1209/api';
+  // const API_BASE_URL =  'https://monkfish-app-phfed.ondigitalocean.app/api';
+  const API_BASE_URL =  'http://localhost:1209/api';
 
   useEffect(() => {
     if (product) {

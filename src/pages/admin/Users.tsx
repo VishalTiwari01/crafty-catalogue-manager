@@ -10,15 +10,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-// Helper function to sort orders (Newest first)
-const sortOrdersByDate = (a: Order, b: Order): number => {
-  try {
-    const dateA = new Date(a.createdAt ?? 0).getTime();
-    const dateB = new Date(b.createdAt ?? 0).getTime();
-    return dateB - dateA; // Newest first
-  } catch (e) {
-    return 0;
-  }
+// Sort by date (newest first)
+const sortOrdersByDate = (a: Order, b: Order) => {
+  const dateA = new Date(a.createdAt ?? 0).getTime();
+  const dateB = new Date(b.createdAt ?? 0).getTime();
+  return dateB - dateA;
 };
 
 const Orders = () => {
@@ -29,7 +25,6 @@ const Orders = () => {
       try {
         const data = await getAllOrders();
         const sortedOrders = (data ?? []).sort(sortOrdersByDate);
-        console.log("Fetched Orders (Sorted):", sortedOrders);
         setOrders(sortedOrders);
       } catch (error) {
         console.error("Error fetching orders:", error);
@@ -49,10 +44,9 @@ const Orders = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Order #</TableHead>
+                <TableHead>Order ID</TableHead>
                 <TableHead>Payment</TableHead>
                 <TableHead>Payment Status</TableHead>
-                <TableHead>Currency</TableHead>
                 <TableHead>Billing Name</TableHead>
                 <TableHead>Billing Address / Phone</TableHead>
                 <TableHead>Product Name</TableHead>
@@ -66,85 +60,62 @@ const Orders = () => {
             <TableBody>
               {orders.map((order) => {
                 const items = order.items ?? [];
-                const billingAddress = order.addresses?.find(
-                  (addr) => addr.type === "billing"
-                );
+                const billing = order.addresses?.find((a) => a.type === "billing");
 
-                const billingAddressText = billingAddress
+                const billingAddressText = billing
                   ? [
-                      billingAddress.addressLine1,
-                      billingAddress.addressLine2,
-                      `${billingAddress.city}, ${billingAddress.state} ${billingAddress.postalCode}`,
-                      billingAddress.country,
+                      billing.addressLine1,
+                      billing.addressLine2,
+                      `${billing.city}, ${billing.state} ${billing.postalCode}`,
+                      billing.country,
                     ]
                       .filter(Boolean)
                       .join(", ")
                   : "N/A";
 
-                // Handle orders with no items
                 if (items.length === 0) {
                   return (
                     <TableRow key={order._id}>
                       <TableCell>{order.orderNumber}</TableCell>
                       <TableCell>{order.paymentMethod}</TableCell>
                       <TableCell>{order.paymentStatus}</TableCell>
-                      <TableCell>{order.currency}</TableCell>
-                      <TableCell>{billingAddress?.name || "N/A"}</TableCell>
+                      <TableCell>{billing?.name || "N/A"}</TableCell>
                       <TableCell>
                         <div className="flex flex-col">
                           <span>{billingAddressText}</span>
-                          {billingAddress?.phone && (
+                          {billing?.phone && (
                             <span className="text-xs text-muted-foreground">
-                              Phone: {billingAddress.phone}
+                              Phone: {billing.phone}
                             </span>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell
-                        colSpan={2}
-                        className="text-muted-foreground italic"
-                      >
+
+                      <TableCell colSpan={2} className="italic text-muted-foreground">
                         No products
                       </TableCell>
-                      <TableCell>
-                        {order.currency} {order.subtotal.toFixed(2)}
-                      </TableCell>
-                      <TableCell>
-                        {order.currency} {order.taxAmount.toFixed(2)}
-                      </TableCell>
-                      <TableCell>
-                        {order.currency} {order.totalAmount.toFixed(2)}
-                      </TableCell>
+
+                      <TableCell>{order.subtotal.toFixed(2)}</TableCell>
+                      <TableCell>{order.taxAmount.toFixed(2)}</TableCell>
+                      <TableCell>{order.totalAmount.toFixed(2)}</TableCell>
                     </TableRow>
                   );
                 }
 
-                // Render order with items
                 return items.map((item, idx) => (
                   <TableRow key={`${order._id}-${idx}`}>
                     {idx === 0 && (
                       <>
-                        <TableCell rowSpan={items.length}>
-                          {order.orderNumber}
-                        </TableCell>
-                        <TableCell rowSpan={items.length}>
-                          {order.paymentMethod}
-                        </TableCell>
-                        <TableCell rowSpan={items.length}>
-                          {order.paymentStatus}
-                        </TableCell>
-                        <TableCell rowSpan={items.length}>
-                          {order.currency}
-                        </TableCell>
-                        <TableCell rowSpan={items.length}>
-                          {billingAddress?.name || "N/A"}
-                        </TableCell>
+                        <TableCell rowSpan={items.length}>{order.orderNumber}</TableCell>
+                        <TableCell rowSpan={items.length}>{order.paymentMethod}</TableCell>
+                        <TableCell rowSpan={items.length}>{order.paymentStatus}</TableCell>
+                        <TableCell rowSpan={items.length}>{billing?.name || "N/A"}</TableCell>
                         <TableCell rowSpan={items.length}>
                           <div className="flex flex-col">
                             <span>{billingAddressText}</span>
-                            {billingAddress?.phone && (
+                            {billing?.phone && (
                               <span className="text-xs text-muted-foreground">
-                                Phone: {billingAddress.phone}
+                                Phone: {billing.phone}
                               </span>
                             )}
                           </div>
@@ -158,18 +129,19 @@ const Orders = () => {
                         ? ` (${item.variantId.variantValue})`
                         : ""}
                     </TableCell>
+
                     <TableCell>{item.quantity}</TableCell>
 
                     {idx === 0 && (
                       <>
                         <TableCell rowSpan={items.length}>
-                          {order.currency} {order.subtotal.toFixed(2)}
+                          {order.subtotal.toFixed(2)}
                         </TableCell>
                         <TableCell rowSpan={items.length}>
-                          {order.currency} {order.taxAmount.toFixed(2)}
+                          {order.taxAmount.toFixed(2)}
                         </TableCell>
                         <TableCell rowSpan={items.length}>
-                          {order.currency} {order.totalAmount.toFixed(2)}
+                          {order.totalAmount.toFixed(2)}
                         </TableCell>
                       </>
                     )}

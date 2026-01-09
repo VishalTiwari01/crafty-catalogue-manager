@@ -12,12 +12,14 @@ import Users from "./pages/admin/Users";
 import Analytics from "./pages/admin/Analytics";
 import Settings from "./pages/admin/Settings";
 import NotFound from "./pages/NotFound";
-import Orders from "./pages/admin/Users";
 import { Provider } from "react-redux";
 import { store } from "./redux/store";
 const queryClient = new QueryClient();
 import Login from "./pages/Login";
 import PrivateRoute from "./components/PrivateRoute";
+import Orders from "./pages/admin/Orders";
+import OrderDetail from "./pages/admin/OrderDetail";
+import ProductDetail from "./pages/admin/ProductDetail";
 
 const App = () => (
   <Provider store={store}>
@@ -52,7 +54,27 @@ const App = () => (
                 }
               />
               <Route
+                path="/admin/products/:id"
+                element={
+                  <PrivateRoute>
+                    <AdminLayout>
+                      <ProductDetail />
+                    </AdminLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
                 path="/admin/users"
+                element={
+                  <PrivateRoute>
+                    <AdminLayout>
+                      <Users />
+                    </AdminLayout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin/orders"
                 element={
                   <PrivateRoute>
                     <AdminLayout>
@@ -61,6 +83,17 @@ const App = () => (
                   </PrivateRoute>
                 }
               />
+              <Route
+                path="/admin/orders/:orderId"
+                element={
+                  <PrivateRoute>
+                    <AdminLayout>
+                      <OrderDetail />
+                    </AdminLayout>
+                  </PrivateRoute>
+                }
+              />
+              
               <Route
                 path="/admin/analytics"
                 element={

@@ -1,33 +1,25 @@
-// src/types/product.d.ts
+// src/types/product.ts
 
-export interface ProductVariant {
-  productId?: string;
-  variantType: string;
-  variantValue: string;
-  priceAdjustment: number;
-  stockQuantity: number;
-  images: string[]; // Updated to an array of image URLs
-  isActive: boolean;
+export interface ApiVariant {
+  id: number;
+  title: string;
+  price: string;
+  compare_at_price: string | null;
+  quantity: number;
+  image?: {
+    src: string;
+  };
 }
 
 export interface Product {
-  _id?: string;
-  name: string;
-  description: string;
-  shortDescription: string;
-  categoryId: string;
-  price: number;
-  salePrice?: number;
-  stockQuantity: number;
-  weight?: number;
-  size?: string;
-  careInstructions?: string;
-  warrantyPeriod?: number;
-  isFeatured: boolean;
-  isActive: boolean;
-  status: 'active' | 'draft' | 'archived';
-  imageUrl: any[]; // Updated to an array of image URLs
-  variants: ProductVariant[];
-  // images: string[]; // URLs for the main product images
-  slug?: string;
+  id: number;
+  title: string;
+  body_html: string;
+  product_type: string;
+  status: "active" | "draft";
+  variants: ApiVariant[];
+  vendor?: string;
+  image?: {
+    src: string;
+  };
 }

@@ -1,20 +1,15 @@
-import { Product } from '@/types/product';
+import { Product } from "@/types/product";
 import { Order } from "@/types/order";
 import axios from "axios";
 
-
 const API_BASE_URL =  'https://oyster-app-u5rld.ondigitalocean.app/api';
-// export const API_BASE_URL = 'http://localhost:1209/api'
+// export const API_BASE_URL = "http://localhost:1209/api";
 interface SaveProductResponse {
   id: string;
   message?: string;
 }
 
-
-
 import { signIn } from "@/redux/slices/authSlice";
-
-
 
 export const loginUser = async (mobile, dispatch) => {
   try {
@@ -46,15 +41,15 @@ export const createProduct = async (
     const formData = new FormData();
 
     // Serialize product JSON data
-    formData.append('data', JSON.stringify(productData));
+    formData.append("data", JSON.stringify(productData));
 
     // Append main product images
     mainFiles?.forEach((file) => {
-      formData.append('mainImages', file);
+      formData.append("mainImages", file);
     });
 
     // Append variant images (only if variantFiles is defined and not null)
-    if (variantFiles && typeof variantFiles === 'object') {
+    if (variantFiles && typeof variantFiles === "object") {
       Object.entries(variantFiles).forEach(([variantIndex, files]) => {
         files?.forEach((file) => {
           formData.append(`variantImages[${variantIndex}]`, file);
@@ -63,7 +58,7 @@ export const createProduct = async (
     }
 
     const response = await fetch(`${API_BASE_URL}/products`, {
-      method: 'POST',
+      method: "POST",
       body: formData,
     });
 
@@ -74,11 +69,10 @@ export const createProduct = async (
 
     return await response.json();
   } catch (error: any) {
-    console.error('Error creating product:', error);
-    throw new Error(error?.message || 'Unknown error while creating product');
+    console.error("Error creating product:", error);
+    throw new Error(error?.message || "Unknown error while creating product");
   }
 };
-
 
 export const updateProduct = async (
   id: string,
@@ -88,10 +82,10 @@ export const updateProduct = async (
 ): Promise<SaveProductResponse> => {
   try {
     const formData = new FormData();
-    formData.append('data', JSON.stringify(productData));
+    formData.append("data", JSON.stringify(productData));
 
     mainFiles.forEach((file) => {
-      formData.append('mainImages', file);
+      formData.append("mainImages", file);
     });
 
     Object.keys(variantFiles).forEach((variantIndex) => {
@@ -101,7 +95,7 @@ export const updateProduct = async (
     });
 
     const response = await fetch(`${API_BASE_URL}/products/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: formData,
     });
 
@@ -111,7 +105,7 @@ export const updateProduct = async (
 
     return await response.json();
   } catch (error) {
-    console.error('Error updating product:', error);
+    console.error("Error updating product:", error);
     throw error;
   }
 };
@@ -119,55 +113,95 @@ export const updateProduct = async (
 export const deleteProduct = async (id: string): Promise<void> => {
   try {
     const response = await fetch(`${API_BASE_URL}/products/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
 
     if (!response.ok) {
       throw new Error(`Error: ${response.statusText}`);
     }
   } catch (error) {
-    console.error('Error deleting product:', error);
+    console.error("Error deleting product:", error);
     throw error;
   }
 };
 
-export const fetchProducts = async (): Promise<Product[]> => {
+export const fetchProducts = async (search?: string,page = 1,limit = 10): Promise<Product[]> => {
+  console.log("Fetching products with search query:", search);
   try {
-    const response = await fetch(`${API_BASE_URL}/products`);
-    if (!response.ok) {
-      throw new Error(`Error: ${response.statusText}`);
+    const response = await axios.get(`${API_BASE_URL}/products/admin/products`,{
+      params: { 
+      search,
+      page,
+      limit
+
     }
-    return await response.json();
+    });
+    
+    return await response.data;
   } catch (error) {
-    console.error('Error fetching products:', error);
+    console.error("Error fetching products:", error);
     return []; // Return an empty array on error
   }
 };
 
-export const getAllOrders = async () => {
+export const getAllOrders = async (
+  page = 1,
+  limit = 10,
+  status?: string,
+  paymentStatus?: string,
+  shipmentStatus?: string,
+  search?: string
+) => {
   try {
     const token = localStorage.getItem("token");
 
-    const response = await axios.get(`${API_BASE_URL}/orders`, {
+    const response = await axios.get(`${API_BASE_URL}/admin/orders`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
+      params: {
+        page,
+        limit,
+        status,
+        paymentStatus,
+        shipmentStatus,
+        search,
+      },
     });
 
-    const data = response.data;
+    /**
+     * Expected response:
+     * {
+     *   success: true,
+     *   data: {
+     *     data: Order[],
+     *     pagination: {...}
+     *   }
+     * }
+     */
 
-    // Normalize output
-    if (Array.isArray(data)) return data;
-    if (Array.isArray(data?.orders)) return data.orders;
+    const payload = response.data?.data;
 
-    console.warn("Unexpected orders response:", data);
-    return [];
+    if (!payload) {
+      console.warn("Unexpected orders response:", response.data);
+      return {
+        orders: [],
+        pagination: null,
+      };
+    }
+
+    return {
+      orders: payload.data || [],
+      pagination: payload.pagination || null,
+    };
   } catch (error) {
     console.error("getAllOrders() failed:", error);
-    return [];
+    return {
+      orders: [],
+      pagination: null,
+    };
   }
 };
-
 
 export const getOrderById = async (orderId?: string | null) => {
   if (!orderId) throw new Error("Order ID is required");
@@ -181,4 +215,19 @@ export const getOrderById = async (orderId?: string | null) => {
   });
 
   return response.data;
+};
+
+export const getDashboardStats = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await axios.get(`${API_BASE_URL}/admin/dashboard`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("getDashboardStats() failed:", error);
+    return null;
+  }
 };

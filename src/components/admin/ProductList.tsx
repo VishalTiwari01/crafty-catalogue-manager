@@ -1,170 +1,126 @@
 import { useState } from "react";
-import { Product } from "@/types/product";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import {
-  Search,
-  Star,
-  Package,
-  Edit2,
-  Trash2,
-} from "lucide-react";
+import { Pencil, Trash2, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import React from "react";
 
 interface ProductListProps {
-  products: Product[];
-  onEdit: (product: Product) => void;
+  products: any[];
+  onEdit: (product: any) => void;
   onDelete: (id: string) => void;
+  onView?: (product: any) => void;
 }
 
-const formatPrice = (value?: number | null) => {
-  // If value is undefined/null/NaN, show 0.00 (or you can return "-" if you prefer)
-  const num = typeof value === "number" && !Number.isNaN(value) ? value : 0;
-  return num.toFixed(2);
-};
+const formatPrice = (value?: number | null) =>
+  typeof value === "number" ? value.toFixed(2) : "0.00";
 
-export const ProductList = ({ products, onEdit, onDelete }: ProductListProps) => {
-  const [searchTerm, setSearchTerm] = useState("");
+export const ProductList = ({
+  products,
+  onEdit,
+  onDelete,
+  onView,
+}: ProductListProps) => {
   const { toast } = useToast();
 
-  const filteredProducts = products.filter((product) => {
-    const name = (product.name ?? "").toString().toLowerCase();
-    // categoryId might be an id string or missing — fall back to empty string
-    const category = (product.categoryId ?? "").toString().toLowerCase();
-    const term = searchTerm.toLowerCase();
-    return name.includes(term) || category.includes(term);
-  });
-
-  const handleDelete = (product: Product) => {
-    if (window.confirm(`Are you sure you want to delete "${product.name}"?`)) {
-      onDelete(product._id);
-      toast({
-        title: "Product Deleted",
-        description: `${product.name} has been removed.`,
-      });
-    }
-  };
-
   return (
-    <div className="space-y-6">
-      {/* Search bar */}
-      <div className="flex items-center space-x-2">
-        <div className="relative flex-grow">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search products..."
-            className="pl-9"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </div>
+    <div className="space-y-4">
+      {products.map((product) => {
+        const firstVariant = product.variants?.[0];
 
-      {/* Product Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredProducts.map((product) => {
-          // safe local values
-          const salePriceFormatted = formatPrice(product.salePrice);
-          const priceFormatted = formatPrice(product.price);
-          const rating = typeof product.rating === "number" ? product.rating : 0;
-          const reviewCount = typeof product.reviewCount === "number" ? product.reviewCount : 0;
-          const stockQuantity = typeof product.stockQuantity === "number" ? product.stockQuantity : 0;
+        const stock = product.variants?.reduce(
+          (sum: number, v: any) => sum + (v.stockQuantity ?? 0),
+          0
+        );
 
-          return (
-            <Card
-              key={product._id ?? `${product.name}-${product.price}`}
-              className="overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 relative"
-            >
-              {/* Product Image */}
-              <div className="relative">
-                {product.imageUrl?.[0] ? (
-                  <img
-                    src={product.imageUrl[0].imageUrl}
-                    alt={product.name}
-                    className="w-full h-48 object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-48 flex items-center justify-center bg-gray-200 text-gray-400">
-                    No Image
-                  </div>
+        const imageSrc =
+          product.images?.[0]?.imageUrl ||
+          firstVariant?.images?.[0]?.imageUrl ||
+          "https://via.placeholder.com/100?text=No+Image";
+
+        return (
+          <div
+            key={product._id}
+            className="group flex gap-4 p-4 border rounded-xl bg-background hover:shadow-md transition"
+          >
+            {/* IMAGE */}
+            <div className="relative">
+              <img
+                src={imageSrc}
+                alt={product.name}
+                className="h-24 w-24 rounded-lg object-cover border"
+              />
+              {stock === 0 && (
+                <span className="absolute top-1 left-1 text-xs bg-red-600 text-white px-2 py-0.5 rounded">
+                  Out of stock
+                </span>
+              )}
+            </div>
+
+            {/* INFO */}
+            <div className="flex-1 space-y-1">
+              <h3 className="font-semibold text-lg leading-tight">
+                {product.name}
+              </h3>
+
+              <p className="text-xs text-muted-foreground">
+                Category: {product.categoryId}
+              </p>
+
+              {/* PRICE */}
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-primary">
+                  ₹{formatPrice(firstVariant?.salePrice ?? firstVariant?.price)}
+                </span>
+
+                {firstVariant?.salePrice && (
+                  <span className="text-xs line-through text-muted-foreground">
+                    ₹{formatPrice(firstVariant.price)}
+                  </span>
                 )}
-                {product.isFeatured && (
-                  <Badge variant="secondary" className="absolute top-2 left-2">
-                    Featured
-                  </Badge>
-                )}
-
-                {/* Edit & Delete Icons */}
-                <div className="absolute top-2 right-2 flex space-x-2 bg-white/80 p-1 rounded-md shadow-sm">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="text-blue-600 hover:bg-blue-100"
-                    onClick={() => onEdit(product)}
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="text-red-600 hover:bg-red-100"
-                    onClick={() => handleDelete(product)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
               </div>
 
-              {/* Product Details */}
-              <CardContent className="p-4">
-                <div className="mb-1">
-                  <h3 className="text-lg font-semibold truncate">{product.name}</h3>
-                  <p className="text-sm text-muted-foreground">{product.categoryId}</p>
-                </div>
+              {/* META */}
+              <div className="flex gap-4 text-xs text-muted-foreground">
+                <span>Stock: {stock}</span>
+                <span>Variants: {product.variants?.length ?? 0}</span>
+              </div>
+            </div>
 
-                {/* Price */}
-                <div className="flex items-center justify-between mt-2">
-                  <p className="text-xl font-bold text-primary">
-                    ₹{salePriceFormatted}
-                  </p>
-                  {/* Show original price only if it's > 0 and different from salePrice */}
-                  {Number(product.price) > 0 && Number(product.price) !== Number(product.salePrice) && (
-                    <p className="text-sm text-muted-foreground line-through ml-2">
-                      ₹{priceFormatted}
-                    </p>
-                  )}
-                </div>
+            {/* ACTIONS */}
+            <div className="flex flex-col justify-between items-end gap-2">
+              <div className="flex gap-2">
+                
+                  <button
+                    onClick={() => onView(product._id)}
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs border rounded-lg hover:bg-muted transition"
+                  >
+                    <Eye size={14} />
+                    View
+                  </button>
+                
 
-                {/* Ratings & Stock */}
-                <div className="flex items-center justify-between text-sm mt-2 text-muted-foreground">
-                  <div className="flex items-center space-x-1">
-                    <Star className="w-4 h-4" />
-                    <span>
-                      {rating} ({reviewCount})
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <Package className="w-4 h-4" />
-                    <span>{stockQuantity} in stock</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                <button
+                  onClick={() => onEdit(product)}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs border border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 transition"
+                >
+                  <Pencil size={14} />
+                  Edit
+                </button>
 
-      {/* No Results */}
-      {filteredProducts.length === 0 && (
-        <div className="text-center py-12">
-          <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No products found</h3>
-          <p className="text-muted-foreground">
-            {searchTerm ? "Try adjusting your search terms." : "Get started by adding your first product."}
-          </p>
+                <button
+                  onClick={() => onDelete(product.shiprocketProductId)}
+                  className="flex items-center gap-1 px-3 py-1.5 text-xs border border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition"
+                >
+                  <Trash2 size={14} />
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+
+      {products.length === 0 && (
+        <div className="text-center py-10 text-muted-foreground">
+          No products found
         </div>
       )}
     </div>

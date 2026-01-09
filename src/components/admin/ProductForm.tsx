@@ -1,20 +1,20 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { X, Plus, Trash2, Upload, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { Checkbox } from '@/components/ui/checkbox';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { X, Plus, Trash2, Upload, Loader2, Weight } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 
 // Helper function to validate MongoDB ObjectId
 const isValidMongoId = (id: string): boolean => {
@@ -27,32 +27,34 @@ interface ProductImage {
 }
 
 interface ProductVariant {
-  productId?: string; // Added to align with CreateProductVariantDto
-  variantType: string;
-  variantValue: string;
-  priceAdjustment: number;
-  stockQuantity: number;
-  imageUrl: ProductImage[];
-  isActive: boolean;
-}
-
-interface ProductFormData {
-  _id?: string; // Optional, only for existing products
-  name: string;
-  description?: string;
-  shortDescription?: string;
-  categoryId: string;
+  _id: any;
+  id?: Number;
+  variantName: string;
   price: number;
   salePrice?: number;
   stockQuantity: number;
   weight?: number;
   size?: string;
-  careInstructions?: string;
+  images: ProductImage[];
+  isActive: boolean;
   warrantyPeriod?: number;
+  height?: number;
+  width?: number;
+  breadth?: number;
+  length?: number;
+}
+
+interface ProductFormData {
+  _id?: string; // MongoDB ObjectId for existing products
+  id?: string; // Optional, only for existing products
+  name: string;
+  description?: string;
+  brand?: string;
+  categoryId: string;
   isFeatured: boolean;
   isActive: boolean;
-  imageUrl: ProductImage[];
-  status: 'draft' | 'active' | 'inactive' | 'out_of_stock';
+  images: ProductImage[];
+  status: "draft" | "active" | "inactive" | "out_of_stock";
   variants: ProductVariant[];
 }
 
@@ -62,80 +64,82 @@ interface ProductFormProps {
   onCancel: () => void;
 }
 
-export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => {
+export const ProductForm = ({
+  product: variant,
+  onSave,
+  onCancel,
+}: ProductFormProps) => {
   const { toast } = useToast();
 
   // Main form state with safe defaults
   const [formData, setFormData] = useState<ProductFormData>({
-    name: '',
-    description: '',
-    shortDescription: '',
-    categoryId: '',
-    price: 0,
-    salePrice: 0,
-    stockQuantity: 0,
-    weight: 0,
-    size: '',
-    careInstructions: '',
-    warrantyPeriod: 0,
+    name: "",
+    description: "",
+    brand: "",
+    categoryId: "",
     isFeatured: false,
     isActive: true,
-    imageUrl: [],
-    status: 'active',
+    images: [],
+    status: "active",
     variants: [],
   });
 
   // Loading states
   const [isUploading, setIsUploading] = useState(false);
   const [isCreatingProduct, setIsCreatingProduct] = useState(false);
-  const [uploadingVariantIndex, setUploadingVariantIndex] = useState<number | null>(null);
+  const [uploadingVariantIndex, setUploadingVariantIndex] = useState<
+    number | null
+  >(null);
 
   // API base URL
-  const API_BASE_URL =  'https://monkfish-app-phfed.ondigitalocean.app/api';
+  const API_BASE_URL = "https://oyster-app-u5rld.ondigitalocean.app/api";
   // const API_BASE_URL =  'http://localhost:1209/api';
+  
 
-  useEffect(() => {
-    if (product) {
-      // Safely merge product data with defaults
-      setFormData({
-        name: product.name ?? '',
-        description: product.description ?? '',
-        shortDescription: product.shortDescription ?? '',
-        categoryId: product.categoryId ?? '',
-        price: product.price ?? 0,
-        salePrice: product.salePrice ?? 0,
-        stockQuantity: product.stockQuantity ?? 0,
-        weight: product.weight ?? 0,
-        size: product.size ?? '',
-        careInstructions: product.careInstructions ?? '',
-        warrantyPeriod: product.warrantyPeriod ?? 0,
-        isFeatured: product.isFeatured ?? false,
-        isActive: product.isActive ?? true,
-        imageUrl: Array.isArray(product.imageUrl) ? product.imageUrl : [],
-        status: product.status ?? 'active',
-        variants: Array.isArray(product.variants)
-          ? product.variants.map((variant) => ({
-            // productId: variant.productId ?? null,
-            variantType: variant.variantType ?? 'Color',
-            variantValue: variant.variantValue ?? '',
-            priceAdjustment: variant.priceAdjustment ?? 0,
-            stockQuantity: variant.stockQuantity ?? 0,
-            imageUrl: Array.isArray(variant.imageUrl) ? variant.imageUrl : [],
-            isActive: variant.isActive ?? true,
-          }))
-          : [],
-      });
-    }
-  }, [product]);
+  console.log("ProductForm variant prop:", variant);
+
+useEffect(() => {
+  if (!variant) return;
+
+  setFormData({
+    _id: (variant as any)._id,
+    id: (variant as any).id,
+    name: variant.name ?? "",
+    description: variant.description ?? "",
+    categoryId: variant.categoryId ?? "",
+    brand: variant.brand ?? "",
+    isFeatured: variant.isFeatured ?? false,
+    isActive: variant.isActive ?? true,
+    status: variant.status ?? "active",
+    images: variant.images ?? [],
+    variants: (variant.variants ?? []).map(v => ({
+      _id: v._id,
+      id: v._id,
+      variantName: v.variantName,
+      price: v.price,
+      salePrice: v.salePrice,
+      stockQuantity: v.stockQuantity,
+      weight: v.weight,
+      length: v.length,
+      breadth: v.breadth,
+      height: v.height,
+      isActive: v.isActive,
+      images: v.images ?? [],
+    })),
+  });
+}, [variant]);
+
 
   // Handle main field changes
-  const handleMainFieldChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleMainFieldChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { id, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
 
     setFormData((prev) => ({
       ...prev,
-      [id]: type === 'checkbox' ? checked : value,
+      [id]: type === "checkbox" ? checked : value,
     }));
   };
 
@@ -148,29 +152,30 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
   };
 
   // Demo function for image upload
-  const uploadImages = async (files: File[]): Promise<Array<{ url: string; public_id: string }>> => {    // add api for upload image here
+  const uploadImages = async (
+    files: File[]
+  ): Promise<Array<{ url: string; public_id: string }>> => {
+    // add api for upload image here
     // Example: Call your image upload API and return the uploaded image URLs
     // This is a demo, replace with actual API call if needed
     try {
       const formData = new FormData();
-      files.forEach((file) => formData.append('image', file));
+      files.forEach((file) => formData.append("image", file));
       const response = await fetch(`${API_BASE_URL}/uploads/images`, {
-        method: 'POST',
+        method: "POST",
         body: formData,
       });
 
       const data = await response.json();
-      console.log('Upload response data:', data);
       return data; // [{ url, public_id }]
     } catch (error) {
       toast({
-        title: 'Upload Error',
-        description: 'Failed to upload images. Please try again.',
-        variant: 'destructive',
+        title: "Upload Error",
+        description: "Failed to upload images. Please try again.",
+        variant: "destructive",
       });
-      console.error('Image upload error:', error);
-      throw new Error('Failed to upload images');
-
+      console.error("Image upload error:", error);
+      throw new Error("Failed to upload images");
     }
 
     // return files.map((file, index) => ({
@@ -180,14 +185,16 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
   };
 
   // Handle main image upload
-  const handleMainImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMainImageChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     setIsUploading(true);
     try {
       const fileArray = Array.from(files);
-      const uploadedImages = await uploadImages(fileArray) as any;
+      const uploadedImages = (await uploadImages(fileArray)) as any;
 
       // const imageObjects: ProductImage[] = uploadedImages.map((img) => ({
       //   imageUrl: uploadedImages.url,
@@ -196,22 +203,25 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
 
       setFormData((prev) => ({
         ...prev,
-        imageUrl: [...(prev.imageUrl ?? []), {
-          imageUrl: uploadedImages.url,
-          public_id: uploadedImages.public_id,
-        }],
+        images: [
+          ...(prev.images ?? []),
+          {
+            imageUrl: uploadedImages.url,
+            public_id: uploadedImages.public_id,
+          },
+        ],
       }));
 
       toast({
-        title: 'Success',
+        title: "Success",
         description: `${uploadedImages.length} image(s) uploaded successfully.`,
       });
     } catch (error) {
-      console.error('Image upload error:', error);
+      console.error("Image upload error:", error);
       toast({
-        title: 'Upload Error',
-        description: 'Failed to upload images. Please try again.',
-        variant: 'destructive',
+        title: "Upload Error",
+        description: "Failed to upload images. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsUploading(false);
@@ -222,44 +232,48 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
   const removeMainImage = (index: number) => {
     setFormData((prev) => ({
       ...prev,
-      imageUrl: (prev.imageUrl ?? []).filter((_, i) => i !== index),
+      imageUrl: (prev.images ?? []).filter((_, i) => i !== index),
     }));
   };
 
   // Handle variant image upload
-  const handleVariantImageChange = async (variantIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVariantImageChange = async (
+    variantIndex: number,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     setUploadingVariantIndex(variantIndex);
     try {
       const fileArray = Array.from(files);
-      const uploadedImages = await uploadImages(fileArray) as any;
-
-
+      const uploadedImages = (await uploadImages(fileArray)) as any;
 
       setFormData((prev) => {
         const newVariants = [...(prev.variants ?? [])];
         newVariants[variantIndex] = {
           ...newVariants[variantIndex],
-          imageUrl: [...(newVariants[variantIndex].imageUrl ?? []), {
-          imageUrl: uploadedImages.url,
-          public_id: uploadedImages.public_id,
-        }],
+          images: [
+            ...(newVariants[variantIndex].images ?? []),
+            {
+              imageUrl: uploadedImages.url,
+              public_id: uploadedImages.public_id,
+            },
+          ],
         };
         return { ...prev, variants: newVariants };
       });
 
       toast({
-        title: 'Success',
+        title: "Success",
         description: `${uploadedImages.length} variant image(s) uploaded successfully.`,
       });
     } catch (error) {
-      console.error('Variant image upload error:', error);
+      console.error("Variant image upload error:", error);
       toast({
-        title: 'Upload Error',
-        description: 'Failed to upload variant images. Please try again.',
-        variant: 'destructive',
+        title: "Upload Error",
+        description: "Failed to upload variant images. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setUploadingVariantIndex(null);
@@ -272,24 +286,32 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
       const newVariants = [...(prev.variants ?? [])];
       newVariants[variantIndex] = {
         ...newVariants[variantIndex],
-        imageUrl: (newVariants[variantIndex].imageUrl ?? []).filter((_, i) => i !== imageIndex),
+        images: (newVariants[variantIndex].images ?? []).filter(
+          (_, i) => i !== imageIndex
+        ),
       };
       return { ...prev, variants: newVariants };
     });
   };
 
   // Variant management
-  const handleVariantChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVariantChange = (
+    index: number,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const { name, value, type, checked } = e.target;
     const newVariants = [...(formData.variants ?? [])];
     newVariants[index] = {
       ...newVariants[index],
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: type === "checkbox" ? checked : value,
     };
     setFormData((prev) => ({ ...prev, variants: newVariants }));
   };
 
-  const handleVariantNumberChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVariantNumberChange = (
+    index: number,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const { name, value } = e.target;
     const newVariants = [...(formData.variants ?? [])];
     newVariants[index] = {
@@ -305,13 +327,20 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
       variants: [
         ...(prev.variants ?? []),
         {
-          // productId: '', // Will be set on submit
-          variantType: 'Color',
-          variantValue: '',
-          priceAdjustment: 0,
+          _id:0,
+          variantName: "",
+          price: 0,
+          salePrice: 0,
           stockQuantity: 0,
-          imageUrl: [],
+          weight: 0,
+          size: "",
+          images: [],
           isActive: true,
+          warrantyPeriod: 0,
+          height: 0,
+          width: 0,
+          breadth: 0,
+          length: 0,
         },
       ],
     }));
@@ -325,34 +354,37 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
   };
 
   // Create or update product via API
-  const createProduct = async (productData: ProductFormData, isUpdate: boolean = false) => {
-    const endpoint = isUpdate ? `${API_BASE_URL}/products/${product?._id}` : `${API_BASE_URL}/products`;
-    const method = isUpdate ? 'PUT' : 'POST';
+  const createProduct = async (
+    productData: ProductFormData,
+    isUpdate: boolean = false
+  ) => {
+    const endpoint = isUpdate
+      ? `${API_BASE_URL}/products/${variant?._id}`
+      : `${API_BASE_URL}/products`;
+    const method = isUpdate ? "PUT" : "POST";
 
     // Transform data to match DTO
     const transformedData = {
       name: productData.name,
       description: productData.description || undefined,
-      shortDescription: productData.shortDescription || undefined,
+      brand: productData.brand || undefined,
       categoryId: productData.categoryId || undefined,
-      price: productData.price,
-      salePrice: productData.salePrice || undefined,
-      stockQuantity: productData.stockQuantity || undefined,
-      weight: productData.weight || undefined,
-      size: productData.size || undefined,
-      careInstructions: productData.careInstructions || undefined,
-      warrantyPeriod: productData.warrantyPeriod || undefined,
       isFeatured: productData.isFeatured ?? false,
       isActive: productData.isActive ?? true,
-      status: productData.status ?? 'active',
-      imageUrl: productData.imageUrl,
+      status: productData.status ?? "active",
+      images: productData.images || [],
       variants: (productData.variants ?? []).map((variant) => ({
-        // productId: variant.productId || product?._id || '', // Use existing productId or leave empty for creation
-        variantType: variant.variantType,
-        variantValue: variant.variantValue,
-        priceAdjustment: variant.priceAdjustment || undefined,
+        // id: variant.id || undefined,
+        id: variant._id ? variant.id : undefined,
+        variantName: variant.variantName || "",
+        price: variant.price || 0,
+        salePrice: variant.salePrice || undefined,
+        height: variant.height || undefined,
+        weight: variant.weight || undefined,
+        length: variant.length || undefined,
+        breadth: variant.breadth || undefined,
         stockQuantity: variant.stockQuantity || undefined,
-        imageUrl: variant.imageUrl,
+        images: variant.images || [],
         isActive: variant.isActive ?? true,
       })),
     };
@@ -361,15 +393,22 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
       const response = await fetch(endpoint, {
         method,
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
         },
         body: JSON.stringify(transformedData),
       });
 
+      // console.log("API response status:", response.status);
+
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || `Failed to ${isUpdate ? 'update' : 'create'} product: ${response.statusText}`);
+        throw new Error(
+          error.message ||
+            `Failed to ${isUpdate ? "update" : "create"} product: ${
+              response.statusText
+            }`
+        );
       }
 
       return await response.json();
@@ -385,68 +424,75 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
     // Validation
     if (!formData.name) {
       toast({
-        title: 'Validation Error',
-        description: 'Product name is required.',
-        variant: 'destructive',
+        title: "Validation Error",
+        description: "Product name is required.",
+        variant: "destructive",
       });
       return;
     }
 
     if (!formData.categoryId) {
       toast({
-        title: 'Validation Error',
-        description: 'A valid Category Name is required.',
-        variant: 'destructive',
+        title: "Validation Error",
+        description: "A valid Category Name is required.",
+        variant: "destructive",
       });
       return;
     }
 
-    if (formData.price <= 0) {
+    if ((formData.variants ?? []).some((v) => !v.price || v.price <= 0)) {
       toast({
-        title: 'Validation Error',
-        description: 'Price must be greater than 0.',
-        variant: 'destructive',
+        title: "Validation Error",
+        description: "All variants must have a price greater than 0.",
+        variant: "destructive",
       });
       return;
     }
 
-    if ((formData.imageUrl ?? []).length === 0) {
+    if ((formData.images ?? []).length === 0) {
       toast({
-        title: 'Validation Error',
-        description: 'At least one product image is required.',
-        variant: 'destructive',
+        title: "Validation Error",
+        description: "At least one product image is required.",
+        variant: "destructive",
       });
       return;
     }
 
     // Validate variants
     for (const [index, variant] of (formData.variants ?? []).entries()) {
-      if (!variant.variantType || !variant.variantValue) {
+
+      console.log("Validating variant:", variant.price);
+      if (!variant.variantName || !variant.price) {
         toast({
-          title: 'Validation Error',
+          title: "Validation Error",
           description: `Variant ${index + 1}: Type and value are required.`,
-          variant: 'destructive',
+          variant: "destructive",
         });
         return;
       }
-      if ((variant.imageUrl ?? []).length === 0) {
+      if ((variant.images ?? []).length === 0) {
         toast({
-          title: 'Validation Error',
+          title: "Validation Error",
           description: `Variant ${index + 1}: At least one image is required.`,
-          variant: 'destructive',
+          variant: "destructive",
         });
         return;
       }
     }
 
     setIsCreatingProduct(true);
+
     try {
-      const isUpdate = !!product?._id;
+      const isUpdate = !!variant?._id;
+      console.log("Submitting form data:", formData, "isUpdate:", isUpdate);
+
       const createdProduct = await createProduct(formData, isUpdate);
 
       toast({
-        title: 'Success',
-        description: `Product "${formData.name}" ${isUpdate ? 'updated' : 'created'} successfully.`,
+        title: "Success",
+        description: `Product "${formData.name}" ${
+          isUpdate ? "updated" : "created"
+        } successfully.`,
       });
 
       if (onSave) {
@@ -457,9 +503,12 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
     } catch (error) {
       // console.error('Product operation error:', error);
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : `Failed to ${product?._id ? 'update' : 'create'} product.`,
-        variant: 'destructive',
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : `Failed to ${variant?._id ? "update" : "create"} product.`,
+        variant: "destructive",
       });
     } finally {
       setIsCreatingProduct(false);
@@ -471,7 +520,9 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
       <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-2xl">{product?._id ? 'Edit Product' : 'Add New Product'}</CardTitle>
+            <CardTitle className="text-2xl">
+              {variant?._id ? "Edit Product" : "Add New Product"}
+            </CardTitle>
             <Button variant="outline" size="icon" onClick={onCancel}>
               <X className="w-4 h-4" />
             </Button>
@@ -485,57 +536,52 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="name">Product Name *</Label>
-                  <Input id="name" value={formData.name ?? ''} onChange={handleMainFieldChange} required />
+                  <Input
+                    id="name"
+                    value={formData.name ?? ""}
+                    onChange={handleMainFieldChange}
+                    required
+                  />
                 </div>
                 <div>
-                  <Label htmlFor="categoryId">Category ID *</Label>
-                  <Input id="categoryId" value={formData.categoryId ?? ''} onChange={handleMainFieldChange} required />
+                  <Label htmlFor="categoryId">Category Name *</Label>
+                  <Input
+                    id="categoryId"
+                    value={formData.categoryId ?? ""}
+                    onChange={handleMainFieldChange}
+                    required
+                  />
                 </div>
               </div>
               <div>
-                <Label htmlFor="shortDescription">Short Description</Label>
-                <Textarea id="shortDescription" rows={2} value={formData.shortDescription ?? ''} onChange={handleMainFieldChange} />
+                <Label htmlFor="brand">Brand</Label>
+                <Input
+                  id="brand"
+                  value={formData.brand ?? ""}
+                  onChange={handleMainFieldChange}
+                />
               </div>
               <div>
                 <Label htmlFor="description">Full Description</Label>
-                <Textarea id="description" rows={4} value={formData.description ?? ''} onChange={handleMainFieldChange} />
+                <Textarea
+                  id="description"
+                  rows={4}
+                  value={formData.description ?? ""}
+                  onChange={handleMainFieldChange}
+                />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <Label htmlFor="price">Price *</Label>
-                  <Input id="price" type="number" step="0.01" value={formData.price ?? 0} onChange={handleNumberFieldChange} required />
-                </div>
-                <div>
-                  <Label htmlFor="salePrice">Sale Price</Label>
-                  <Input id="salePrice" type="number" step="0.01" value={formData.salePrice ?? 0} onChange={handleNumberFieldChange} />
-                </div>
-                <div>
-                  <Label htmlFor="stockQuantity">Stock Quantity</Label>
-                  <Input id="stockQuantity" type="number" value={formData.stockQuantity ?? 0} onChange={handleNumberFieldChange} />
-                </div>
-                {/* <div>
-                  <Label htmlFor="weight">Weight (kg)</Label>
-                  <Input id="weight" type="number" step="0.01" value={formData.weight ?? 0} onChange={handleNumberFieldChange} />
-                </div> */}
-                {/* <div>
-                  <Label htmlFor="size">Size</Label>
-                  <Input id="size" value={formData.size ?? ''} onChange={handleMainFieldChange} />
-                </div> */}
-                {/* <div>
-                  <Label htmlFor="warrantyPeriod">Warranty Period (months)</Label>
-                  <Input id="warrantyPeriod" type="number" value={formData.warrantyPeriod ?? 0} onChange={handleNumberFieldChange} />
-                </div> */}
-              </div>
-              {/* <div>
-                <Label htmlFor="careInstructions">Care Instructions</Label>
-                <Textarea id="careInstructions" rows={2} value={formData.careInstructions ?? ''} onChange={handleMainFieldChange} />
-              </div> */}
+
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="isFeatured"
                     checked={formData.isFeatured ?? false}
-                    onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isFeatured: Boolean(checked) }))}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        isFeatured: Boolean(checked),
+                      }))
+                    }
                   />
                   <Label htmlFor="isFeatured">Featured</Label>
                 </div>
@@ -543,17 +589,22 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
                   <Checkbox
                     id="isActive"
                     checked={formData.isActive ?? true}
-                    onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, isActive: Boolean(checked) }))}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        isActive: Boolean(checked),
+                      }))
+                    }
                   />
                   <Label htmlFor="isActive">Active</Label>
                 </div>
                 <div>
                   <Label htmlFor="status">Status</Label>
                   <Select
-                    value={formData.status ?? 'active'}
-                    onValueChange={(value: 'draft' | 'active' | 'inactive' | 'out_of_stock') =>
-                      setFormData((prev) => ({ ...prev, status: value }))
-                    }
+                    value={formData.status ?? "active"}
+                    onValueChange={(
+                      value: "draft" | "active" | "inactive" | "out_of_stock"
+                    ) => setFormData((prev) => ({ ...prev, status: value }))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
@@ -573,7 +624,9 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
             <div className="space-y-4 border-b pb-4">
               <h2 className="text-lg font-semibold">Product Images *</h2>
               <div>
-                <Label htmlFor="main-image-upload">Upload Images (Multiple)</Label>
+                <Label htmlFor="main-image-upload">
+                  Upload Images (Multiple)
+                </Label>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Input
@@ -591,12 +644,16 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
                       </div>
                     )}
                   </div>
-                  {(formData.imageUrl ?? []).length > 0 && (
+                  {(formData.images ?? []).length > 0 && (
                     <div className="flex flex-wrap gap-2">
-                      {(formData.imageUrl ?? []).map((image, index) => (
-                        <Badge key={index} variant="secondary" className="flex items-center gap-1 p-1">
+                      {(formData.images ?? []).map((image, index) => (
+                        <Badge
+                          key={index}
+                          variant="secondary"
+                          className="flex items-center gap-1 p-1"
+                        >
                           <img
-                            src={image.imageUrl}
+                            src={image.imageUrl }
                             alt={`Product preview ${index + 1}`}
                             className="h-12 w-12 object-cover rounded-sm"
                           />
@@ -612,7 +669,8 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
                     </div>
                   )}
                   <p className="text-sm text-muted-foreground">
-                    {(formData.imageUrl ?? []).length} image(s) uploaded. At least one image is required.
+                    {(formData.images ?? []).length} image(s) uploaded. At
+                    least one image is required.
                   </p>
                 </div>
               </div>
@@ -629,7 +687,8 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
 
               {(formData.variants ?? []).length === 0 && (
                 <p className="text-sm text-muted-foreground">
-                  No variants added yet. Add variants for different colors, sizes, or other variations.
+                  No variants added yet. Add variants for different colors,
+                  sizes, or other variations.
                 </p>
               )}
 
@@ -637,7 +696,9 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
                 {(formData.variants ?? []).map((variant, index) => (
                   <Card key={index} className="p-4 bg-muted">
                     <div className="flex justify-between items-center mb-2">
-                      <h3 className="text-md font-medium">Variant {index + 1}</h3>
+                      <h3 className="text-md font-medium">
+                        Variant {index + 1}
+                      </h3>
                       <Button
                         type="button"
                         variant="ghost"
@@ -650,31 +711,24 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor={`variantType-${index}`}>Type</Label>
+                        <Label htmlFor={`variantName-${index}`}>
+                          Varient Name
+                        </Label>
                         <Input
-                          id={`variantType-${index}`}
-                          name="variantType"
-                          value={variant.variantType ?? 'Color'}
+                          id={`variantName-${index}`}
+                          name="variantName"
+                          value={variant.variantName ?? "Color"}
                           onChange={(e) => handleVariantChange(index, e)}
                           placeholder="e.g., Color, Size"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor={`variantValue-${index}`}>Value</Label>
-                        <Input
-                          id={`variantValue-${index}`}
-                          name="variantValue"
-                          value={variant.variantValue ?? ''}
-                          onChange={(e) => handleVariantChange(index, e)}
-                          placeholder="e.g., Red, Large"
                           required
                         />
                       </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                       <div>
-                        <Label htmlFor={`stockQuantity-${index}`}>Stock Quantity</Label>
+                        <Label htmlFor={`stockQuantity-${index}`}>
+                          Stock Quantity
+                        </Label>
                         <Input
                           id={`stockQuantity-${index}`}
                           name="stockQuantity"
@@ -683,23 +737,106 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
                           onChange={(e) => handleVariantNumberChange(index, e)}
                         />
                       </div>
-                      <div>
-                        <Label htmlFor={`priceAdjustment-${index}`}>Price Adjustment</Label>
-                        <Input
-                          id={`priceAdjustment-${index}`}
-                          name="priceAdjustment"
-                          type="number"
-                          step="0.01"
-                          value={variant.priceAdjustment ?? 0}
-                          onChange={(e) => handleVariantNumberChange(index, e)}
-                          placeholder="0.00 (+ or - from base price)"
-                        />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                          <Label htmlFor="price">Price *</Label>
+                          <Input
+                            name="price"
+                            type="number"
+                            step="0.01"
+                            value={variant.price ?? 0}
+                            onChange={(e) =>
+                              handleVariantNumberChange(index, e)
+                            }
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="salePrice">Sale Price</Label>
+                          <Input
+                            name="salePrice"
+                            type="number"
+                            step="0.01"
+                            value={variant.salePrice ?? 0}
+                            onChange={(e) =>
+                              handleVariantNumberChange(index, e)
+                            }
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="weight">Weight (kg)</Label>
+                          <Input
+                            name="weight"
+                            type="number"
+                            step="0.01"
+                            value={variant.weight ?? 0}
+                            onChange={(e) =>
+                              handleVariantNumberChange(index, e)
+                            }
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="height">Height (kg)</Label>
+                          <Input
+                            name="height"
+                            type="number"
+                            step="0.01"
+                            value={variant.height ?? 0}
+                            onChange={(e) =>
+                              handleVariantNumberChange(index, e)
+                            }
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="length">Length (kg)</Label>
+                          <Input
+                            name="length"
+                            type="number"
+                            step="0.01"
+                            value={variant.length ?? 0}
+                            onChange={(e) =>
+                              handleVariantNumberChange(index, e)
+                            }
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="breadth">Breadth (kg)</Label>
+                          <Input
+                            name="breadth"
+                            type="number"
+                            step="0.01"
+                            value={variant.breadth ?? 0}
+                            onChange={(e) =>
+                              handleVariantNumberChange(index, e)
+                            }
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor="warrantyPeriod">
+                            Warranty Period (months)
+                          </Label>
+                          <Input
+                            name="warrantyPeriod"
+                            type="number"
+                            value={variant.warrantyPeriod ?? 0}
+                            onChange={(e) =>
+                              handleVariantNumberChange(index, e)
+                            }
+                          />
+                        </div>
                       </div>
                     </div>
 
                     {/* Variant Images Section */}
                     <div className="mt-4 space-y-2">
-                      <Label htmlFor={`variant-image-upload-${index}`}>Upload Variant Images *</Label>
+                      <Label htmlFor={`variant-image-upload-${index}`}>
+                        Upload Variant Images *
+                      </Label>
                       <div className="flex items-center gap-2">
                         <Input
                           id={`variant-image-upload-${index}`}
@@ -716,18 +853,26 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
                           </div>
                         )}
                       </div>
-                      {(variant.imageUrl ?? []).length > 0 && (
+                      {(variant.images ?? []).length > 0 && (
                         <div className="flex flex-wrap gap-2">
-                          {(variant.imageUrl ?? []).map((image, imageIndex) => (
-                            <Badge key={imageIndex} variant="secondary" className="flex items-center gap-1 p-1">
+                          {(variant.images ?? []).map((image, imageIndex) => (
+                            <Badge
+                              key={imageIndex}
+                              variant="secondary"
+                              className="flex items-center gap-1 p-1"
+                            >
                               <img
                                 src={image.imageUrl}
-                                alt={`Variant ${index + 1} image ${imageIndex + 1}`}
+                                alt={`Variant ${index + 1} image ${
+                                  imageIndex + 1
+                                }`}
                                 className="h-12 w-12 object-cover rounded-sm"
                               />
                               <button
                                 type="button"
-                                onClick={() => removeVariantImage(index, imageIndex)}
+                                onClick={() =>
+                                  removeVariantImage(index, imageIndex)
+                                }
                                 className="ml-1 hover:text-destructive"
                               >
                                 <X className="w-3 h-3" />
@@ -737,7 +882,8 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
                         </div>
                       )}
                       <p className="text-sm text-muted-foreground">
-                        {(variant.imageUrl ?? []).length} variant image(s) uploaded. At least one image is required.
+                        {(variant.images ?? []).length} variant image(s)
+                        uploaded. At least one image is required.
                       </p>
                     </div>
 
@@ -749,7 +895,10 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
                         onCheckedChange={(checked) => {
                           const newVariants = [...(formData.variants ?? [])];
                           newVariants[index].isActive = Boolean(checked);
-                          setFormData((prev) => ({ ...prev, variants: newVariants }));
+                          setFormData((prev) => ({
+                            ...prev,
+                            variants: newVariants,
+                          }));
                         }}
                       />
                       <Label htmlFor={`isActive-${index}`}>Active</Label>
@@ -760,7 +909,12 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
             </div>
 
             <div className="flex justify-end gap-4 pt-4">
-              <Button type="button" variant="outline" onClick={onCancel} disabled={isCreatingProduct}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onCancel}
+                disabled={isCreatingProduct}
+              >
                 Cancel
               </Button>
               <Button
@@ -771,10 +925,12 @@ export const ProductForm = ({ product, onSave, onCancel }: ProductFormProps) => 
                 {isCreatingProduct ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {product?._id ? 'Updating...' : 'Creating...'}
+                    {variant?._id ? "Updating..." : "Creating..."}
                   </>
+                ) : variant?._id ? (
+                  "Update Product"
                 ) : (
-                  product?._id ? 'Update Product' : 'Create Product'
+                  "Create Product"
                 )}
               </Button>
             </div>
